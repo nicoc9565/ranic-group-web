@@ -1,150 +1,486 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranic Group LLC | Wholesale & Distribution Partners</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    
-    <meta name="google-site-verification" content="..." />
-    <meta name="description" content="Ranic Group LLC is a premier wholesale distributor based in Summit, NJ. We partner with top brands to optimize their presence on Amazon FBA through data-driven strategies.">
-    <meta name="keywords" content="Ranic Group LLC, Wholesale Distributor NJ, Amazon FBA Partner, Brand Management, Summit New Jersey, Logistics, Bulk Distribution">
-    <meta name="author" content="Ranic Group LLC">
-    <link rel="canonical" href="https://www.ranicgroup.com/">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranic Group LLC | Marketplace Distribution & Brand Protection</title>
 
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://www.ranicgroup.com/">
-    <meta property="og:title" content="Ranic Group LLC | Strategic Retail Partners">
-    <meta property="og:description" content="Based in Summit, NJ, we help manufacturers reach their full potential on Amazon while protecting brand integrity.">
-    <meta property="og:image" content="https://www.ranicgroup.com/img/logo-ranic-group.png">
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="icon" type="image/png" href="./img/logo-ranic-group.png">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'brand-dark': '#002147', 'brand-accent': '#3b82f6', },
-                    fontFamily: {
-                        sans: ['League Spartan', 'sans-serif'], }
-                }
-            }
+  <!-- SEO -->
+  <meta name="description" content="Ranic Group LLC is a U.S.-based wholesale & marketplace distribution partner. We help Health, Beauty & Wellness brands scale on Amazon while protecting pricing integrity, listing quality, and brand reputation." />
+  <meta name="keywords" content="Ranic Group LLC, wholesale distributor, marketplace distribution, Amazon FBA partner, MAP compliance, brand protection, Summit New Jersey" />
+  <meta name="author" content="Ranic Group LLC" />
+  <link rel="canonical" href="https://www.ranicgroup.com/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.ranicgroup.com/" />
+  <meta property="og:title" content="Ranic Group LLC | Marketplace Distribution Partner" />
+  <meta property="og:description" content="We scale brands on Amazon and leading marketplaces with disciplined operations, MAP compliance, and data-driven execution." />
+  <meta property="og:image" content="https://www.ranicgroup.com/img/logo-ranic-group.png" />
+
+  <link rel="icon" type="image/png" href="./img/logo-ranic-group.png" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'brand-dark': '#002147',
+            'brand-accent': '#3b82f6',
+            'brand-ink': '#0b1220'
+          },
+          fontFamily: {
+            sans: ['League Spartan', 'sans-serif'],
+          },
+          boxShadow: {
+            'soft': '0 12px 40px rgba(2,33,71,0.10)',
+            'soft2': '0 20px 70px rgba(2,33,71,0.14)'
+          }
         }
-    </script>
-    <style>
-        /* Asegurar desplazamiento suave */
-        html { scroll-behavior: smooth; }
-    </style>
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
 </head>
 <body class="bg-white text-slate-900 font-sans">
 
-    <nav class="bg-brand-dark text-white py-4">
-        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
-            <div class="text-3xl font-extrabold tracking-tight">
-                ranic group.
-                </div>
-            
-            <div class="hidden md:flex items-center space-x-8 font-semibold text-sm uppercase tracking-wider">
-                <a href="#about" class="hover:text-brand-accent transition">About Us</a>
-                <a href="#services" class="hover:text-brand-accent transition">Our Value</a>
-                <a href="#contact" class="bg-brand-accent px-6 py-3 rounded-full hover:bg-blue-500 transition shadow-lg shadow-blue-500/30">Contact Us</a>
-            </div>
-        </div>
-    </nav>
+  <!-- Top Bar (micro trust) -->
+  <div class="bg-slate-900 text-slate-100 text-sm">
+    <div class="max-w-7xl mx-auto px-6 py-2 flex flex-col sm:flex-row gap-2 sm:gap-6 items-start sm:items-center justify-between">
+      <div class="flex flex-wrap gap-x-4 gap-y-1 items-center">
+        <span class="inline-flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          U.S. Based Operations · Summit, NJ
+        </span>
+        <span class="hidden sm:inline text-slate-400">•</span>
+        <span class="text-slate-300">Health · Beauty · Wellness</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <a class="hover:text-white" href="mailto:info@ranicgroup.com">info@ranicgroup.com</a>
+        <span class="text-slate-400">|</span>
+        <a class="hover:text-white" href="#contact">Request Evaluation</a>
+      </div>
+    </div>
+  </div>
 
-    <header class="relative py-24 px-6 overflow-hidden bg-white">
-        <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-            <div>
-                <span class="text-brand-accent font-bold tracking-widest uppercase text-sm flex items-center mb-4">
-                    <span class="w-8 h-[2px] bg-brand-accent mr-2"></span> Strategic Retail Partners
-                </span>
-                <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight text-brand-dark">
-                    We scale brands in the Digital Marketplace.
-                </h1>
-                <p class="text-xl text-slate-600 mb-10 leading-relaxed max-w-lg">
-                    Based in <span class="font-bold text-brand-dark">Summit, NJ</span>, we specialize in data-driven distribution. We help manufacturers reach their full potential on Amazon while protecting brand integrity.
-                </p>
-                <div class="flex space-x-4">
-                    <a href="#contact" class="px-10 py-4 bg-brand-dark text-white font-bold rounded-full hover:bg-[#00152e] transition shadow-xl shadow-brand-dark/20">Partner With Us</a>
-                </div>
-            </div>
-            <div class="relative h-80 md:h-[500px] bg-gradient-to-tr from-blue-50 to-white rounded-[3rem] border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center">
-                <div class="absolute inset-0 bg-brand-accent opacity-5 mix-blend-multiply"></div>
-                
-                <img src="./img/logo-ranic-group.png" 
-                     alt="Ranic Group LLC Brand" 
-                     class="relative z-10 w-full h-full object-cover hover:scale-105 transition duration-500">
-            </div>
+  <!-- Nav -->
+  <nav class="bg-white/90 backdrop-blur border-b border-slate-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="#top" class="flex items-center gap-3">
+        <img src="./img/logo-ranic-group.png" alt="Ranic Group" class="w-10 h-10 rounded-xl" />
+        <div class="leading-tight">
+          <div class="text-2xl font-extrabold tracking-tight text-brand-dark">ranic group</div>
+          <div class="text-xs font-semibold tracking-widest uppercase text-slate-500">Marketplace Distribution</div>
         </div>
-    </header>
+      </a>
 
-    <section id="services" class="py-24 bg-slate-50 px-6">
-        <div class="max-w-7xl mx-auto">
-            <div class="mb-16">
-                <h2 class="text-4xl font-extrabold text-brand-dark">Why Brands Trust Us Today</h2>
-            </div>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group hover:-translate-y-2 transition duration-300">
-                    <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 text-brand-accent font-extrabold text-2xl group-hover:bg-brand-accent group-hover:text-white transition">01</div>
-                    <h3 class="text-2xl font-bold mb-4 text-brand-dark">MAP Compliance</h3>
-                    <p class="text-slate-600 text-lg leading-relaxed">We rigorously respect Minimum Advertised Price (MAP) policies to protect your brand's premium value across all channels.</p>
-                </div>
-                <div class="bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group hover:-translate-y-2 transition duration-300">
-                     <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 text-brand-accent font-extrabold text-2xl group-hover:bg-brand-accent group-hover:text-white transition">02</div>
-                    <h3 class="text-2xl font-bold mb-4 text-brand-dark">Local Logistics (NJ)</h3>
-                    <p class="text-slate-600 text-lg leading-relaxed">Our Summit, NJ presence allows for physical inspection and rapid, compliant preparation of inventory for FBA centers.</p>
-                </div>
-                <div class="bg-white p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group hover:-translate-y-2 transition duration-300">
-                     <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-8 text-brand-accent font-extrabold text-2xl group-hover:bg-brand-accent group-hover:text-white transition">03</div>
-                    <h3 class="text-2xl font-bold mb-4 text-brand-dark">Data-Driven Growth</h3>
-                    <p class="text-slate-600 text-lg leading-relaxed">We don't just stock products. We analyze market data to ensure high rotation and increase your market share.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+      <div class="hidden md:flex items-center gap-8 font-semibold text-sm uppercase tracking-wider text-slate-700">
+        <a href="#why" class="hover:text-brand-accent transition">Why Us</a>
+        <a href="#model" class="hover:text-brand-accent transition">Model</a>
+        <a href="#capabilities" class="hover:text-brand-accent transition">Capabilities</a>
+        <a href="#faq" class="hover:text-brand-accent transition">FAQ</a>
+        <a href="#contact" class="bg-brand-dark text-white px-6 py-3 rounded-full hover:bg-brand-ink transition shadow-soft">Contact</a>
+      </div>
 
-    <section id="contact" class="bg-brand-dark py-24 px-6 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-brand-accent rounded-full opacity-10 blur-3xl"></div>
-        
-        <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center relative z-10">
-            <div>
-                <span class="text-brand-accent font-bold tracking-widest uppercase text-sm mb-4 block">
-                    Ranic Group LLC
-                </span>
-                <h2 class="text-5xl md:text-6xl font-extrabold mb-8 leading-tight">
-                    Start a Partnership Today.
-                </h2>
-                <p class="text-2xl text-blue-200 mb-9 leading-relaxed">
-                    Founded with a vision for strategic growth and operational excellence, we are ready to help your brand navigate the complexities of modern e-commerce.
-                </p>
-                <div class="mb-12">
-                    <p class="text-lg text-white mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Summit, New Jersey, 07901
-                    </p>
-                    <p class="text-lg text-white flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-3 text-brand-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        info@ranicgroup.com
-                    </p>
-                </div>
-                <a href="mailto:info@ranicgroup.com" class="px-10 py-4 bg-brand-accent text-white font-bold rounded-full hover:bg-white hover:text-brand-dark transition shadow-xl shadow-blue-900/50">Contact Us Now</a>
-            </div>
-            
-            <div class="h-[500px] rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white/10 relative">
-                <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" alt="Warehouse logistics" class="w-full h-full object-cover object-center opacity-80 hover:opacity-100 transition duration-500 hover:scale-105">
-            </div>
+      <!-- Mobile CTA -->
+      <a href="#contact" class="md:hidden bg-brand-dark text-white px-5 py-2.5 rounded-full font-bold shadow-soft">Contact</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header id="top" class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-white"></div>
+
+    <!-- Decorative blobs -->
+    <div class="absolute -top-24 -right-28 w-[520px] h-[520px] bg-brand-accent/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-40 -left-40 w-[560px] h-[560px] bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+    <div class="relative max-w-7xl mx-auto px-6 py-20 md:py-28 grid lg:grid-cols-12 gap-14 items-center">
+
+      <div class="lg:col-span-7">
+        <div class="inline-flex items-center gap-2 rounded-full bg-white border border-slate-200 px-4 py-2 shadow-soft">
+          <span class="text-xs font-extrabold tracking-widest uppercase text-brand-accent">B2B Partnerships</span>
+          <span class="text-slate-300">|</span>
+          <span class="text-xs font-semibold tracking-wider text-slate-600">Brand Protection · MAP Discipline · Clean Supply Chain</span>
         </div>
 
-        <footer class="mt-20 pt-10 border-t border-white/10 text-center text-blue-300 text-sm">
-            © 2026 Ranic Group LLC. All rights reserved. | Summit, NJ.
-        </footer>
-    </section>
+        <h1 class="mt-6 text-5xl md:text-7xl font-extrabold leading-[0.95] text-brand-dark">
+          Scale on Amazon & Marketplaces —
+          <span class="text-brand-accent">without losing price control</span>.
+        </h1>
+
+        <p class="mt-6 text-xl md:text-2xl text-slate-600 leading-relaxed max-w-2xl">
+          Ranic Group LLC is a U.S.-based wholesale and marketplace distribution partner for
+          <span class="font-bold text-brand-dark">Health, Beauty & Wellness</span> brands.
+          We expand demand while protecting listing quality, MAP integrity, and brand perception.
+        </p>
+
+        <!-- CTAs -->
+        <div class="mt-10 flex flex-col sm:flex-row gap-4">
+          <a href="#contact" class="inline-flex justify-center items-center px-10 py-4 bg-brand-dark text-white font-extrabold rounded-full hover:bg-brand-ink transition shadow-soft2">
+            Request a Strategic Evaluation
+          </a>
+          <a href="#model" class="inline-flex justify-center items-center px-10 py-4 bg-white text-brand-dark font-extrabold rounded-full border border-slate-200 hover:border-slate-300 transition shadow-soft">
+            See How It Works
+          </a>
+        </div>
+
+        <!-- Micro trust row -->
+        <div class="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl">
+          <div class="bg-white/80 border border-slate-200 rounded-2xl p-4 shadow-soft">
+            <div class="text-sm font-extrabold text-brand-dark">MAP-first</div>
+            <div class="text-sm text-slate-600">pricing discipline</div>
+          </div>
+          <div class="bg-white/80 border border-slate-200 rounded-2xl p-4 shadow-soft">
+            <div class="text-sm font-extrabold text-brand-dark">U.S. ops</div>
+            <div class="text-sm text-slate-600">Summit, NJ</div>
+          </div>
+          <div class="bg-white/80 border border-slate-200 rounded-2xl p-4 shadow-soft">
+            <div class="text-sm font-extrabold text-brand-dark">Data-led</div>
+            <div class="text-sm text-slate-600">SKU selection</div>
+          </div>
+          <div class="bg-white/80 border border-slate-200 rounded-2xl p-4 shadow-soft">
+            <div class="text-sm font-extrabold text-brand-dark">Long-term</div>
+            <div class="text-sm text-slate-600">wholesale focus</div>
+          </div>
+        </div>
+
+        <!-- Note: Replace with real logos ASAP -->
+        <p class="mt-8 text-sm text-slate-500">
+          <span class="font-bold">Trust signals matter.</span> If you have partner brand logos or compliance certifications, place them here.
+        </p>
+      </div>
+
+      <div class="lg:col-span-5">
+        <div class="relative rounded-[2.5rem] overflow-hidden border-8 border-white shadow-soft2 bg-white">
+          <div class="absolute inset-0 bg-gradient-to-tr from-blue-50 to-white"></div>
+          <div class="relative p-8">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-brand-accent/10 flex items-center justify-center">
+                <span class="text-brand-accent font-extrabold">RG</span>
+              </div>
+              <div>
+                <div class="text-lg font-extrabold text-brand-dark">Partnership Snapshot</div>
+                <div class="text-sm text-slate-500">What brands get when they work with us</div>
+              </div>
+            </div>
+
+            <div class="mt-8 space-y-4">
+              <div class="rounded-2xl border border-slate-200 p-5 bg-white shadow-soft">
+                <div class="text-sm font-extrabold text-brand-dark">Brand Integrity</div>
+                <div class="text-sm text-slate-600">MAP compliance, listing quality, controlled channel expansion.</div>
+              </div>
+              <div class="rounded-2xl border border-slate-200 p-5 bg-white shadow-soft">
+                <div class="text-sm font-extrabold text-brand-dark">Operational Discipline</div>
+                <div class="text-sm text-slate-600">Inventory inspection, compliant prep, and fulfillment alignment.</div>
+              </div>
+              <div class="rounded-2xl border border-slate-200 p-5 bg-white shadow-soft">
+                <div class="text-sm font-extrabold text-brand-dark">Marketplace Execution</div>
+                <div class="text-sm text-slate-600">Pricing intelligence, sell-through focus, performance reporting.</div>
+              </div>
+            </div>
+
+            <div class="mt-8 rounded-2xl bg-slate-900 text-slate-100 p-6">
+              <div class="text-sm font-extrabold tracking-widest uppercase text-brand-accent">Important</div>
+              <p class="mt-2 text-sm text-slate-300">
+                If you cannot show <span class="font-bold text-white">proof</span> (logos, case studies, compliance badges),
+                you will look like a reseller. This page is built to fix that — once you add the evidence.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Why Us -->
+  <section id="why" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="max-w-3xl">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-brand-dark">Why brands choose Ranic Group</h2>
+        <p class="mt-4 text-xl text-slate-600">We operate like a marketplace growth partner — with the discipline of a wholesale distributor.</p>
+      </div>
+
+      <div class="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="bg-white p-9 rounded-3xl border border-slate-100 shadow-soft hover:-translate-y-1 transition">
+          <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-brand-accent font-extrabold">01</div>
+          <h3 class="mt-6 text-2xl font-extrabold text-brand-dark">MAP discipline</h3>
+          <p class="mt-3 text-lg text-slate-600">We respect pricing strategy and actively avoid destructive price wars that erode brand value.</p>
+        </div>
+
+        <div class="bg-white p-9 rounded-3xl border border-slate-100 shadow-soft hover:-translate-y-1 transition">
+          <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-brand-accent font-extrabold">02</div>
+          <h3 class="mt-6 text-2xl font-extrabold text-brand-dark">Clean supply chain</h3>
+          <p class="mt-3 text-lg text-slate-600">We prioritize authorized sourcing, documented procurement, and transparent wholesale relationships.</p>
+        </div>
+
+        <div class="bg-white p-9 rounded-3xl border border-slate-100 shadow-soft hover:-translate-y-1 transition">
+          <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-brand-accent font-extrabold">03</div>
+          <h3 class="mt-6 text-2xl font-extrabold text-brand-dark">Data-led SKU selection</h3>
+          <p class="mt-3 text-lg text-slate-600">We focus on sell-through and long-term viability — not short-term arbitrage.</p>
+        </div>
+
+        <div class="bg-white p-9 rounded-3xl border border-slate-100 shadow-soft hover:-translate-y-1 transition">
+          <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-brand-accent font-extrabold">04</div>
+          <h3 class="mt-6 text-2xl font-extrabold text-brand-dark">U.S. operations (NJ)</h3>
+          <p class="mt-3 text-lg text-slate-600">Inspection, compliant prep, and rapid execution from Summit, New Jersey.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Model -->
+  <section id="model" class="py-24 bg-slate-50 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="max-w-3xl">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-brand-dark">Clear partnership model</h2>
+        <p class="mt-4 text-xl text-slate-600">No vague promises — here’s exactly how we work with brands and suppliers.</p>
+      </div>
+
+      <div class="mt-14 grid lg:grid-cols-12 gap-10 items-start">
+        <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-soft p-10">
+          <h3 class="text-2xl font-extrabold text-brand-dark">What we do</h3>
+          <ul class="mt-6 space-y-4 text-lg text-slate-700">
+            <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-brand-accent"></span>Authorized wholesale purchasing and strategic resale across marketplaces.</li>
+            <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-brand-accent"></span>Listing quality control and channel discipline aligned with brand standards.</li>
+            <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-brand-accent"></span>Operational execution: inspection, prep, fulfillment coordination, and sell-through reporting.</li>
+          </ul>
+
+          <div class="mt-10 grid sm:grid-cols-2 gap-6">
+            <div class="rounded-2xl border border-slate-200 p-6">
+              <div class="text-sm font-extrabold tracking-widest uppercase text-slate-500">Best fit for</div>
+              <p class="mt-3 text-lg font-semibold text-brand-dark">Brands that want growth with control</p>
+              <p class="mt-2 text-slate-600">Premium positioning, MAP protection, and clean marketplace presence.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 p-6">
+              <div class="text-sm font-extrabold tracking-widest uppercase text-slate-500">Not a fit for</div>
+              <p class="mt-3 text-lg font-semibold text-brand-dark">Short-term price dumping</p>
+              <p class="mt-2 text-slate-600">If the strategy is racing to the bottom, we’re not your partner.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-6">
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-8">
+            <div class="text-sm font-extrabold tracking-widest uppercase text-brand-accent">Process</div>
+            <ol class="mt-5 space-y-4 text-lg text-slate-700">
+              <li><span class="font-extrabold text-brand-dark">1)</span> Catalog + channel audit</li>
+              <li><span class="font-extrabold text-brand-dark">2)</span> SKU selection + pricing guardrails</li>
+              <li><span class="font-extrabold text-brand-dark">3)</span> Procurement + compliance checks</li>
+              <li><span class="font-extrabold text-brand-dark">4)</span> Marketplace execution + reporting</li>
+            </ol>
+          </div>
+
+          <div class="bg-slate-900 rounded-3xl shadow-soft2 p-8 text-slate-100">
+            <div class="text-sm font-extrabold tracking-widest uppercase text-brand-accent">Trust signals</div>
+            <p class="mt-4 text-slate-300">
+              Add at least one of these to raise B2B conversion rates:
+            </p>
+            <ul class="mt-4 space-y-2 text-slate-200">
+              <li>• Partner brand logos</li>
+              <li>• Case study with before/after metrics</li>
+              <li>• Compliance badges or documentation notes</li>
+              <li>• Clear buying terms (MOQ, payment, lead times)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Capabilities -->
+  <section id="capabilities" class="py-24 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="max-w-3xl">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-brand-dark">Capabilities</h2>
+        <p class="mt-4 text-xl text-slate-600">Focused services that reduce brand risk while increasing sell-through.</p>
+      </div>
+
+      <div class="mt-14 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="bg-white p-10 rounded-3xl border border-slate-100 shadow-soft">
+          <h3 class="text-2xl font-extrabold text-brand-dark">Wholesale Distribution</h3>
+          <p class="mt-3 text-lg text-slate-600">Documented procurement, consistent purchasing, and channel-aligned resale strategy.</p>
+        </div>
+        <div class="bg-white p-10 rounded-3xl border border-slate-100 shadow-soft">
+          <h3 class="text-2xl font-extrabold text-brand-dark">Marketplace Readiness</h3>
+          <p class="mt-3 text-lg text-slate-600">Compliant prep, labeling, bundling constraints, and operational alignment for FBA/3PL flows.</p>
+        </div>
+        <div class="bg-white p-10 rounded-3xl border border-slate-100 shadow-soft">
+          <h3 class="text-2xl font-extrabold text-brand-dark">Performance Reporting</h3>
+          <p class="mt-3 text-lg text-slate-600">Sell-through, pricing monitoring, and actionable insights to keep growth sustainable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-24 bg-slate-50 px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="max-w-3xl">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-brand-dark">FAQ (the questions suppliers actually ask)</h2>
+        <p class="mt-4 text-xl text-slate-600">Answering these upfront reduces friction and increases qualified inbound leads.</p>
+      </div>
+
+      <div class="mt-14 grid lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-10">
+          <h3 class="text-2xl font-extrabold text-brand-dark">Are you an authorized reseller?</h3>
+          <p class="mt-3 text-lg text-slate-600">We focus on long-term wholesale relationships and transparent sourcing. If needed, we can align on authorization terms and documentation requirements during onboarding.</p>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-10">
+          <h3 class="text-2xl font-extrabold text-brand-dark">How do you protect MAP and brand perception?</h3>
+          <p class="mt-3 text-lg text-slate-600">We follow MAP-first pricing guardrails, avoid uncontrolled channel expansion, and maintain listing quality standards that match brand guidelines.</p>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-10">
+          <h3 class="text-2xl font-extrabold text-brand-dark">Do you buy wholesale or operate on consignment?</h3>
+          <p class="mt-3 text-lg text-slate-600">Primarily wholesale purchasing. For select partners, we can discuss structured programs aligned with mutual growth and brand control.</p>
+        </div>
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-soft p-10">
+          <h3 class="text-2xl font-extrabold text-brand-dark">Which categories do you focus on?</h3>
+          <p class="mt-3 text-lg text-slate-600">Health, Beauty & Wellness — with preference for brands that value premium positioning and operational discipline.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="bg-brand-dark py-24 px-6 text-white relative overflow-hidden">
+    <div class="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-brand-accent rounded-full opacity-10 blur-3xl"></div>
+
+    <div class="max-w-7xl mx-auto grid lg:grid-cols-12 gap-14 items-start relative z-10">
+
+      <div class="lg:col-span-6">
+        <span class="text-brand-accent font-extrabold tracking-widest uppercase text-sm">Ranic Group LLC</span>
+        <h2 class="mt-4 text-5xl md:text-6xl font-extrabold leading-tight">Request a Partnership Evaluation</h2>
+        <p class="mt-6 text-xl text-blue-200 leading-relaxed">
+          If you’re a brand or supplier looking for disciplined marketplace distribution,
+          send your details. We reply with next steps and qualification questions.
+        </p>
+
+        <div class="mt-10 space-y-3 text-lg">
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">📍</span>
+            <span>Summit, New Jersey, 07901</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">✉️</span>
+            <a href="mailto:info@ranicgroup.com" class="underline decoration-white/30 hover:decoration-white">info@ranicgroup.com</a>
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <a href="mailto:info@ranicgroup.com?subject=Partnership%20Evaluation%20-%20Ranic%20Group" class="inline-flex justify-center items-center px-10 py-4 bg-brand-accent text-white font-extrabold rounded-full hover:bg-white hover:text-brand-dark transition shadow-soft2">
+            Email Us Now
+          </a>
+        </div>
+      </div>
+
+      <!-- Simple contact form (static; wire to backend later) -->
+      <div class="lg:col-span-6">
+        <div class="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 shadow-soft2">
+          <h3 class="text-2xl font-extrabold">Contact Form</h3>
+          <p class="mt-2 text-blue-200">This form is built for qualified B2B inbound. Connect it to your backend (Formspree, Netlify Forms, or your server).</p>
+
+            <form class="mt-8 grid grid-cols-1 gap-5"
+      action="https://formspree.io/f/xwvnbgjq"
+      method="POST">
+
+  <!-- OPTIONAL: Redirect after submit (create this page if you enable it) -->
+  <!-- <input type="hidden" name="_redirect" value="https://www.ranicgroup.com/thank-you.html"> -->
+
+  <!-- Anti-spam honeypot (bots will fill it; humans won't) -->
+  <input type="text" name="_gotcha" style="display:none">
+
+  <!-- Company / Brand -->
+  <div>
+    <label class="text-sm font-bold tracking-wider uppercase text-blue-200">Company / Brand</label>
+    <input
+      name="company"
+      required
+      class="mt-2 w-full rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-white placeholder:text-blue-200/60 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+      placeholder="e.g., Humble Wellness"
+    />
+  </div>
+
+  <!-- Name -->
+  <div>
+    <label class="text-sm font-bold tracking-wider uppercase text-blue-200">Your Name</label>
+    <input
+      name="name"
+      required
+      class="mt-2 w-full rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-white placeholder:text-blue-200/60 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+      placeholder="Full name"
+    />
+  </div>
+
+  <!-- Email -->
+  <div>
+    <label class="text-sm font-bold tracking-wider uppercase text-blue-200">Email</label>
+    <input
+      name="email"
+      type="email"
+      required
+      class="mt-2 w-full rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-white placeholder:text-blue-200/60 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+      placeholder="name@company.com"
+    />
+  </div>
+
+  <!-- Interest -->
+  <div>
+    <label class="text-sm font-bold tracking-wider uppercase text-blue-200">What are you looking for?</label>
+    <select
+      name="interest"
+      class="mt-2 w-full rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-brand-accent">
+
+      <option class="text-slate-900" value="Wholesale partnership">Wholesale partnership</option>
+      <option class="text-slate-900" value="Marketplace distribution">Marketplace distribution</option>
+      <option class="text-slate-900" value="Brand protection / MAP alignment">Brand protection / MAP alignment</option>
+      <option class="text-slate-900" value="Other">Other</option>
+    </select>
+  </div>
+
+  <!-- Message -->
+  <div>
+    <label class="text-sm font-bold tracking-wider uppercase text-blue-200">Message</label>
+    <textarea
+      name="message"
+      rows="4"
+      required
+      class="mt-2 w-full rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-white placeholder:text-blue-200/60 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+      placeholder="Share catalog link, MOQs, wholesale terms, and MAP policy (if applicable)."></textarea>
+  </div>
+
+  <!-- Submit -->
+  <button
+    type="submit"
+    class="mt-2 inline-flex justify-center items-center px-10 py-4 bg-white text-brand-dark font-extrabold rounded-full hover:bg-blue-50 transition shadow-soft">
+    Submit
+  </button>
+
+  <!-- Optional microcopy -->
+  <p class="text-sm text-blue-200/80">
+    Tip: include your price list, MOQ, lead times, and MAP policy to speed up qualification.
+  </p>
+</form>
+
+
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="mt-20 pt-10 border-t border-white/10 text-center text-blue-200/80 text-sm">
+      © 2026 Ranic Group LLC · Summit, NJ · <a class="underline decoration-white/20 hover:decoration-white" href="mailto:info@ranicgroup.com">info@ranicgroup.com</a>
+    </footer>
+  </section>
 
 </body>
 </html>
