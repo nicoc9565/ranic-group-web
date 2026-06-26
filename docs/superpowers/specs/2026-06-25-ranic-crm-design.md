@@ -99,9 +99,14 @@ fase posterior con su propio spec.
   - Día 4: follow-up corto
   - Día 7: follow-up urgente
   - Día 12: último intento
+- Estado inicial: un proveedor sin ningún email enviado tiene `followUpStep = -1` (o `null`) y
+  sin `firstContactDate`. No genera cálculo de follow-up hasta el primer "marcar como enviado".
 - Próximo follow-up = `firstContactDate + secuencia[followUpStep + 1]`.
+- **Fin de secuencia:** cuando `followUpStep == 3` (ya se envió el último intento, día 12),
+  `followUpStep + 1` cae fuera de la secuencia → no hay más follow-ups. El proveedor deja de
+  aparecer en alertas/follow-ups pendientes (la secuencia se agotó; el próximo paso es manual).
 - "Marcar como enviado" (desde el generador de emails):
-  - avanza `followUpStep`,
+  - avanza `followUpStep` (de -1 a 0 en el primer contacto, luego 0→1→2→3),
   - actualiza `lastEmailDate`,
   - en el primer contacto, fija `firstContactDate`.
 - El dashboard colorea según hoy vs. próximo follow-up:
