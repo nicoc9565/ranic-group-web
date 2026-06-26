@@ -3,19 +3,15 @@
  *
  * Filtro: SOURCE CATEGORY ∈ {Cosmetics Personal Care, Pet, Home} y COUNTRY = United States.
  * Deduplica por empresa (el archivo Beauty se solapa con Exhibitors). Idempotente (id = slug).
+ * Escribe con el SDK web autenticado (signInWithEmailAndPassword) — no requiere service account.
  *
  * Uso:
- *   npm run import-expo -- --dry-run   (solo parsea y reporta el conteo, no escribe)
- *   npm run import-expo                (escribe a Firestore; requiere scripts/serviceAccount.json)
+ *   npm run import-expo -- --dry-run   (solo parsea y reporta el conteo, no escribe ni loguea)
+ *   npm run import-expo                (escribe a Firestore; necesita SEED_USER_PASSWORD en .env.local)
  */
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import "./env";
 import * as XLSX from "xlsx";
 import type { ExpoProspect } from "../lib/types";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SERVICE_ACCOUNT_PATH = resolve(__dirname, "serviceAccount.json");
 
 const FILES = [
   "C:/Nico-Archivos/ClaudeCode/Ranic-Group/Expo West 2026 - Beauty & Personal Care.xlsx",
@@ -41,14 +37,14 @@ function slug(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[̀-ͯ]/g, "") // quitar diacríticos
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
 type Prospect = Omit<ExpoProspect, "id">;
 
-/** Lee ambos Excel, filtra y deduplica por empresa. Devuelve los prospectos. */
+/** Lee ambos Excel, filtra y deduplica por empresa. Devuelve los prospectos por id (slug). */
 function parseProspects(): Map<string, Prospect> {
   const byCompany = new Map<string, Prospect>();
   for (const file of FILES) {
@@ -100,34 +96,37 @@ async function main() {
     process.exit(0);
   }
 
-  if (!existsSync(SERVICE_ACCOUNT_PATH)) {
+  const password = process.env.SEED_USER_PASSWORD;
+  if (!password) {
     console.error(
-      `\n✗ Falta la service account key en:\n  ${SERVICE_ACCOUNT_PATH}\n` +
-        "Generala en Firebase console → Project Settings → Service accounts →\n" +
-        "Generate new private key, guardala como scripts/serviceAccount.json, o usá --dry-run.\n",
+      "\n✗ Falta SEED_USER_PASSWORD en .env.local (o usá --dry-run para solo contar).\n",
     );
     process.exit(1);
   }
 
-  const { cert, initializeApp } = await import("firebase-admin/app");
-  const { getFirestore } = await import("firebase-admin/firestore");
-  const serviceAccount = JSON.parse(readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
-  initializeApp({ credential: cert(serviceAccount) });
-  const db = getFirestore();
+  const { signInWithEmailAndPassword } = await import("firebase/auth");
+  const { collection, doc, getCountFromServer, writeBatch } = await import(
+    "firebase/firestore"
+  );
+  const { auth, db } = await import("../lib/firebase");
 
-  // Escribir en lotes (≤500 por batch; acá entran de sobra).
-  const batch = db.batch();
+  const email = process.env.SEED_USER_EMAIL ?? "nicolas.conti@ranicgroup.com";
+  await signInWithEmailAndPassword(auth, email, password);
+
+  const batch = writeBatch(db);
   for (const [key, p] of prospects) {
-    batch.set(db.collection("expoProspects").doc(key), p);
+    batch.set(doc(db, "expoProspects", key), p);
   }
   await batch.commit();
 
-  const total = (await db.collection("expoProspects").count().get()).data().count;
+  const total = (
+    await getCountFromServer(collection(db, "expoProspects"))
+  ).data().count;
   console.log(`\n✓ Import completo. expoProspects en Firestore: ${total}`);
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error("✗ Error en el import:", err);
+  console.error("✗ Error en el import:", err?.code ?? err);
   process.exit(1);
 });

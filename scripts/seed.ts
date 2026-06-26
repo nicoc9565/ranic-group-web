@@ -1,21 +1,25 @@
 /**
  * Seed idempotente de Firestore: 9 proveedores activos (§8 del spec) + 25 blacklist (§9).
  *
- * Requiere una service account key en scripts/serviceAccount.json (gitignored).
- * Cómo correr:  npm run seed
+ * Se autentica con el SDK web (signInWithEmailAndPassword) usando el login de Nico, y escribe
+ * cumpliendo las reglas (auth != null). No requiere service account.
  *
- * Usa firebase-admin (saltea las reglas de Firestore). IDs deterministas por slug del nombre
- * de la empresa → re-correr el seed no duplica, sobreescribe el mismo documento.
+ * Cómo correr:  npm run seed
+ * Necesita en .env.local: las 6 claves NEXT_PUBLIC_FIREBASE_* + SEED_USER_PASSWORD
+ * (y opcionalmente SEED_USER_EMAIL; por defecto nicolas.conti@ranicgroup.com).
+ *
+ * IDs deterministas por slug del nombre → re-correr no duplica, sobreescribe el mismo doc.
  */
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { cert, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import "./env";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  collection,
+  doc,
+  getCountFromServer,
+  writeBatch,
+} from "firebase/firestore";
+import { auth, db } from "../lib/firebase";
 import type { Category, Status } from "../lib/types";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SERVICE_ACCOUNT_PATH = resolve(__dirname, "serviceAccount.json");
 
 type SeedProvider = {
   company: string;
@@ -152,25 +156,21 @@ function slug(name: string): string {
 }
 
 async function main() {
-  if (!existsSync(SERVICE_ACCOUNT_PATH)) {
+  const email = process.env.SEED_USER_EMAIL ?? "nicolas.conti@ranicgroup.com";
+  const password = process.env.SEED_USER_PASSWORD;
+  if (!password) {
     console.error(
-      `\n✗ Falta la service account key en:\n  ${SERVICE_ACCOUNT_PATH}\n\n` +
-        "Generala en Firebase console → Project Settings → Service accounts →\n" +
-        "Generate new private key, y guardá el JSON como scripts/serviceAccount.json\n",
+      "\n✗ Falta SEED_USER_PASSWORD en .env.local (password de Firebase del usuario de seed).\n",
     );
     process.exit(1);
   }
 
-  const serviceAccount = JSON.parse(readFileSync(SERVICE_ACCOUNT_PATH, "utf8"));
-  initializeApp({ credential: cert(serviceAccount) });
-  const db = getFirestore();
+  await signInWithEmailAndPassword(auth, email, password);
   const now = Date.now();
 
-  // Providers
-  let pBatch = db.batch();
+  const pBatch = writeBatch(db);
   for (const p of PROVIDERS) {
-    const ref = db.collection("providers").doc(slug(p.company));
-    pBatch.set(ref, {
+    pBatch.set(doc(db, "providers", slug(p.company)), {
       company: p.company,
       contact: p.contact,
       email: p.email,
@@ -188,16 +188,18 @@ async function main() {
   }
   await pBatch.commit();
 
-  // Blacklist
-  let bBatch = db.batch();
+  const bBatch = writeBatch(db);
   for (const name of BLACKLIST) {
-    const ref = db.collection("blacklist").doc(slug(name));
-    bBatch.set(ref, { name });
+    bBatch.set(doc(db, "blacklist", slug(name)), { name });
   }
   await bBatch.commit();
 
-  const providersCount = (await db.collection("providers").count().get()).data().count;
-  const blacklistCount = (await db.collection("blacklist").count().get()).data().count;
+  const providersCount = (
+    await getCountFromServer(collection(db, "providers"))
+  ).data().count;
+  const blacklistCount = (
+    await getCountFromServer(collection(db, "blacklist"))
+  ).data().count;
 
   console.log(`\n✓ Seed completo.`);
   console.log(`  providers:  ${providersCount} (esperado 9)`);
@@ -206,6 +208,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("✗ Error en el seed:", err);
+  console.error("✗ Error en el seed:", err?.code ?? err);
   process.exit(1);
 });
