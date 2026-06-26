@@ -20,3 +20,8 @@ export function addDaysISO(iso: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+/** Fecha de hoy en zona local como ISO yyyy-mm-dd (en-CA formatea como ISO). */
+export function todayISO(): string {
+  return new Date().toLocaleDateString("en-CA");
+}

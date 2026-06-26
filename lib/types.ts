@@ -71,3 +71,33 @@ export type EmailType =
   | "catalog_upcs"
   | "reply_approval"
   | "clarification";
+
+// Listas para selects/filtros de la UI (orden de presentación).
+export const CATEGORIES: Category[] = [
+  "Fragancias & Beauty",
+  "Health & Personal Care",
+  "Pet Products",
+  "Home Products",
+  "Entertainment & Toys",
+  "General Merchandise",
+];
+
+export const STATUSES: Status[] = [
+  "Contactado",
+  "Esperando respuesta",
+  "En negociación",
+  "Aprobado",
+  "Descartado",
+];
+
+// Labels en español para los tipos de email (contenido en inglés).
+export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
+  first_short: "Primer contacto (corto)",
+  first_long: "Primer contacto (largo)",
+  followup_4: "Follow-up día 4",
+  followup_7: "Follow-up día 7 (urgencia)",
+  last_attempt_12: "Último intento día 12",
+  catalog_upcs: "Pedir catálogo con UPCs",
+  reply_approval: "Responder a aprobación",
+  clarification: "Pedido de aclaración",
+};
