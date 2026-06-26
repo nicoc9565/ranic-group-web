@@ -10,7 +10,15 @@
  *   npm run import-expo                (escribe a Firestore; necesita SEED_USER_PASSWORD en .env.local)
  */
 import "./env";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  collection,
+  doc,
+  getCountFromServer,
+  writeBatch,
+} from "firebase/firestore";
 import * as XLSX from "xlsx";
+import { auth, db } from "../lib/firebase";
 import type { ExpoProspect } from "../lib/types";
 
 const FILES = [
@@ -104,20 +112,19 @@ async function main() {
     process.exit(1);
   }
 
-  const { signInWithEmailAndPassword } = await import("firebase/auth");
-  const { collection, doc, getCountFromServer, writeBatch } = await import(
-    "firebase/firestore"
-  );
-  const { auth, db } = await import("../lib/firebase");
-
   const email = process.env.SEED_USER_EMAIL ?? "nicolas.conti@ranicgroup.com";
   await signInWithEmailAndPassword(auth, email, password);
 
-  const batch = writeBatch(db);
-  for (const [key, p] of prospects) {
-    batch.set(doc(db, "expoProspects", key), p);
+  // Escribir en lotes chicos: un único batch de 112 daba invalid-argument; chunked es robusto.
+  const CHUNK = 50;
+  const entries = [...prospects];
+  for (let i = 0; i < entries.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const [key, p] of entries.slice(i, i + CHUNK)) {
+      batch.set(doc(db, "expoProspects", key), p);
+    }
+    await batch.commit();
   }
-  await batch.commit();
 
   const total = (
     await getCountFromServer(collection(db, "expoProspects"))
