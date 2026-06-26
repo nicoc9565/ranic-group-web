@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Firebase Admin service account (seed script) — NUNCA commitear
+scripts/serviceAccount.json
+*firebase-adminsdk*.json
+serviceAccount*.json
+
 # vercel
 .vercel
 
