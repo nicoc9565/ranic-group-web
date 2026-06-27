@@ -5,6 +5,7 @@ import {
   JetBrains_Mono,
   Space_Grotesk,
 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // Display / métricas — geométrico, técnico.
@@ -51,6 +52,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-stone font-sans text-ink">
         {children}
+        <Analytics />
       </body>
     </html>
   );
