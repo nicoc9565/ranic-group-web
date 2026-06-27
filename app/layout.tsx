@@ -6,6 +6,7 @@ import {
   Space_Grotesk,
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { OrganizationJsonLd } from "@/components/public/OrganizationJsonLd";
 import "./globals.css";
 
 // Display / métricas — geométrico, técnico.
@@ -36,8 +37,13 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "RANIC GROUP LLC",
-  description: "RANIC GROUP LLC — comprador wholesale online en Summit, NJ.",
+  metadataBase: new URL("https://www.ranicgroup.com"),
+  title: {
+    default: "RANIC GROUP LLC | Wholesale Buyer & Amazon Seller",
+    template: "%s | RANIC GROUP LLC",
+  },
+  description:
+    "RANIC GROUP LLC is a U.S.-based wholesale buyer and Amazon seller in Summit, NJ. We purchase inventory directly from brands and sell it on Amazon with MAP discipline.",
 };
 
 export default function RootLayout({
@@ -47,12 +53,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${archivo.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-stone font-sans text-ink">
         {children}
         <Analytics />
+        <OrganizationJsonLd />
       </body>
     </html>
   );
