@@ -36,7 +36,7 @@ const archivo = Archivo({
 
 export const metadata: Metadata = {
   title: "RANIC GROUP LLC",
-  description: "RANIC GROUP LLC — CRM",
+  description: "RANIC GROUP LLC — comprador wholesale online en Summit, NJ.",
 };
 
 export default function RootLayout({
