@@ -2,22 +2,22 @@ const CATEGORIES = [
   {
     code: "BPC",
     name: "Beauty & Personal Care",
-    description: "Fragancias, cosmética y cuidado personal.",
+    description: "Fragrances, cosmetics, and personal care.",
   },
   {
     code: "H&P",
     name: "Home & Pet",
-    description: "Productos para el hogar y mascotas.",
+    description: "Products for the home and pets.",
   },
   {
     code: "E&T",
     name: "Entertainment & Toys",
-    description: "Juguetes, juegos y entretenimiento.",
+    description: "Toys, games, and entertainment.",
   },
   {
     code: "GM",
     name: "General Merchandise",
-    description: "Mercadería general de alta rotación.",
+    description: "High-turnover general merchandise.",
   },
 ] as const;
 
@@ -26,7 +26,7 @@ export function CategoriesSection() {
     <section className="px-6 py-16">
       <div className="mx-auto max-w-5xl">
         <p className="mb-8 font-sans text-sm font-semibold uppercase tracking-wide text-ink-soft">
-          Categorías que compramos
+          Categories we buy
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {CATEGORIES.map((category) => (

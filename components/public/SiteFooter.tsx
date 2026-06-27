@@ -6,11 +6,11 @@ export function SiteFooter() {
       <p className="mx-auto max-w-5xl text-center font-mono text-xs text-ink-soft">
         RANIC GROUP LLC · Summit, NJ · +1 (201) 572-1383 ·{" "}
         <Link href="/privacy" className="underline hover:text-ink">
-          Privacidad
+          Privacy
         </Link>{" "}
         ·{" "}
         <Link href="/terms" className="underline hover:text-ink">
-          Términos
+          Terms
         </Link>
       </p>
     </footer>
