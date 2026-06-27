@@ -19,6 +19,8 @@ const config: Config = {
         },
         stone: "#F3F4EF", // fondo de la app (neutro frío levemente verdoso)
         surface: "#FFFFFF", // cards y tablas
+        kraft: "#D9CBA3", // fondo/borde de la tarjeta "Purchase Order" (sitio público)
+        stamp: "#B23A2E", // sello "APROBADO" (sitio público)
         ink: {
           DEFAULT: "#1C1B17", // texto principal (negro cálido)
           soft: "#6B6A60", // texto secundario / labels / muted

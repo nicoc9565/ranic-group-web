@@ -18,6 +18,8 @@ solo fachada y se reemplazó por completo: este repo se reconstruyó de cero com
 - **Spec de diseño:** `docs/superpowers/specs/2026-06-26-ranic-public-site-design.md`
 - **Plan de implementación:** `docs/superpowers/plans/2026-06-26-ranic-public-site.md`
 - **Guía visual:** `docs/design-guidelines-public-site.md`
+- **Spec v2 (revisión):** `docs/superpowers/specs/2026-06-27-ranic-public-site-v2-design.md`
+- **Plan v2 (revisión):** `docs/superpowers/plans/2026-06-27-ranic-public-site-v2.md`
 
 Cada plan tiene tareas en orden, con archivos exactos, interfaces, pasos y verificación.
 **Ejecutá tarea por tarea, en orden**, con un commit al final de cada tarea. No saltees tareas ni

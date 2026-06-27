@@ -25,3 +25,40 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Animación de carga del sitio público: tarjeta Purchase Order + sello "APROBADO".
+   El bloque prefers-reduced-motion de arriba neutraliza estas animaciones automáticamente. */
+@keyframes po-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.4);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+
+.animate-po-card-in {
+  animation: po-card-in 400ms ease-out both;
+}
+
+.animate-stamp-in {
+  animation: stamp-in 350ms ease-out both;
+  animation-delay: 280ms;
+}
