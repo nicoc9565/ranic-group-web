@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     // requiere la key y, si falta en runtime, devolvemos un error claro sin romper.
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: "RANIC GROUP Contact Form <onboarding@resend.dev>",
+      from: "RANIC GROUP Contact Form <contact@ranicgroup.com>",
       to: "nicolas.conti@ranicgroup.com",
       replyTo: email,
       subject: `New supplier inquiry: ${company}`,
