@@ -9,12 +9,20 @@ solo fachada y se reemplazó por completo: este repo se reconstruyó de cero com
 
 ## Documentos rectores — leelos antes de tocar código
 
+**Fase 1 — CRM (`/admin`), ya en producción:**
 - **Spec de diseño:** `docs/superpowers/specs/2026-06-25-ranic-crm-design.md`
 - **Plan de implementación:** `docs/superpowers/plans/2026-06-25-ranic-crm.md`
+- **Guía visual:** `docs/design-guidelines.md`
 
-El plan tiene 16 tareas en orden, cada una con archivos exactos, interfaces, pasos y verificación.
+**Fase 2 — Sitio público (`/`, `/privacy`, `/terms`), en curso:**
+- **Spec de diseño:** `docs/superpowers/specs/2026-06-26-ranic-public-site-design.md`
+- **Plan de implementación:** `docs/superpowers/plans/2026-06-26-ranic-public-site.md`
+- **Guía visual:** `docs/design-guidelines-public-site.md`
+
+Cada plan tiene tareas en orden, con archivos exactos, interfaces, pasos y verificación.
 **Ejecutá tarea por tarea, en orden**, con un commit al final de cada tarea. No saltees tareas ni
-improvises alcance: si algo es ambiguo, preguntá antes.
+improvises alcance: si algo es ambiguo, preguntá antes. La Fase 2 no toca nada de `/admin`
+(Fase 1, ya en producción) — son rutas y componentes completamente separados.
 
 ## Cómo trabajamos
 
@@ -101,6 +109,12 @@ improvises alcance: si algo es ambiguo, preguntá antes.
 
 ## Fuera de alcance (Fase 1)
 
-- Rediseño de la web pública de marketing → **Fase 2**, spec propio.
 - Roles más allá de "usuario autenticado" (ambos son admin).
 - Notificaciones por email/push (el dashboard es el recordatorio).
+
+## Fuera de alcance (Fase 2)
+
+- Formulario de contacto propio / captura de leads con backend (el CTA es `mailto:`).
+- Blog, casos de éxito, testimonios, logos de marcas reales.
+- Cualquier cambio a `/admin` (Fase 1).
+- SEO avanzado / contenido extenso para tráfico orgánico.
