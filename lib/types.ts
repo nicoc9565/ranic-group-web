@@ -115,3 +115,44 @@ export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
   reply_approval: "Responder a aprobación",
   clarification: "Pedido de aclaración",
 };
+
+// ── Finanzas (flujo de caja) ──────────────────────────────────────────────
+
+export type TransactionType = "Ingreso" | "Egreso";
+
+export type IncomeSource = "Venta" | "Aporte de Socio" | "Reintegro";
+
+export type ExpenseCategory =
+  | "Compra a Proveedor"
+  | "Suscripciones y Software"
+  | "Gastos Operativos"
+  | "Educación"
+  | "Otros";
+
+export type Transaction = {
+  id: string;
+  date: string; // ISO yyyy-mm-dd
+  type: TransactionType;
+  description: string;
+  amount: number; // siempre positivo; el signo lo da `type`
+  payer: string; // "Quién" — texto libre
+  method: string; // "Método" — texto libre
+  incomeSource: IncomeSource | null; // solo si type === "Ingreso"
+  expenseCategory: ExpenseCategory | null; // solo si type === "Egreso"
+  createdAt: number;
+  updatedAt: number;
+};
+
+export const INCOME_SOURCES: IncomeSource[] = [
+  "Venta",
+  "Aporte de Socio",
+  "Reintegro",
+];
+
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  "Compra a Proveedor",
+  "Suscripciones y Software",
+  "Gastos Operativos",
+  "Educación",
+  "Otros",
+];
