@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { isBlacklisted } from "@/lib/blacklist";
 import {
   CATEGORIES,
+  CONTACT_METHODS,
   STATUSES,
   type BlacklistEntry,
   type Category,
+  type ContactMethod,
   type Provider,
   type Status,
 } from "@/lib/types";
@@ -16,8 +18,12 @@ export type ProviderFormValues = {
   company: string;
   contact: string;
   email: string;
+  phone: string;
+  address: string;
   category: Category;
   status: Status;
+  contactMethod: ContactMethod;
+  score: number;
   website: string;
   blacklisted: boolean;
 };
@@ -34,8 +40,12 @@ function emptyValues(): ProviderFormValues {
     company: "",
     contact: "",
     email: "",
+    phone: "",
+    address: "",
     category: CATEGORIES[0],
     status: STATUSES[0],
+    contactMethod: CONTACT_METHODS[0],
+    score: 0,
     website: "",
     blacklisted: false,
   };
@@ -68,8 +78,12 @@ export function ProviderForm({
             company: initial.company,
             contact: initial.contact,
             email: initial.email,
+            phone: initial.phone,
+            address: initial.address,
             category: initial.category,
             status: initial.status,
+            contactMethod: initial.contactMethod,
+            score: initial.score,
             website: initial.website,
             blacklisted: initial.blacklisted,
           }
@@ -100,6 +114,8 @@ export function ProviderForm({
         company: values.company.trim(),
         contact: values.contact.trim(),
         email: values.email.trim(),
+        phone: values.phone.trim(),
+        address: values.address.trim(),
         website: values.website.trim(),
       });
       onClose();
@@ -165,6 +181,31 @@ export function ProviderForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
+            <label className={labelCls} htmlFor="phone">
+              Teléfono
+            </label>
+            <input
+              id="phone"
+              className={`${inputCls} font-mono`}
+              value={values.phone}
+              onChange={(e) => set("phone", e.target.value)}
+            />
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="address">
+              Dirección
+            </label>
+            <input
+              id="address"
+              className={inputCls}
+              value={values.address}
+              onChange={(e) => set("address", e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
             <label className={labelCls} htmlFor="category">
               Categoría
             </label>
@@ -194,6 +235,43 @@ export function ProviderForm({
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls} htmlFor="contactMethod">
+              Método de Contacto
+            </label>
+            <select
+              id="contactMethod"
+              className={inputCls}
+              value={values.contactMethod}
+              onChange={(e) => set("contactMethod", e.target.value as ContactMethod)}
+            >
+              {CONTACT_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls} htmlFor="score">
+              Score
+            </label>
+            <select
+              id="score"
+              className={inputCls}
+              value={values.score}
+              onChange={(e) => set("score", Number(e.target.value))}
+            >
+              {[0, 1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {n}
                 </option>
               ))}
             </select>
