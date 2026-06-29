@@ -10,7 +10,8 @@
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
     "import-expo": "tsx scripts/import-expo.ts",
-    "import-providers": "tsx scripts/import-providers.ts"
+    "import-providers": "tsx scripts/import-providers.ts",
+    "import-transactions": "tsx scripts/import-transactions.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
