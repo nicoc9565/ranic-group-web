@@ -165,22 +165,10 @@ export default function FinanzasPage() {
         onClose={closeForm}
         initial={editingTransaction}
         onSave={handleSave}
+        onDelete={
+          editId ? async () => void (await deleteTransaction(editId)) : undefined
+        }
       />
-
-      {editId && editingTransaction && (
-        <div className="mt-2 text-right">
-          <button
-            type="button"
-            onClick={async () => {
-              await deleteTransaction(editId);
-              closeForm();
-            }}
-            className="text-xs text-status-overdue hover:underline"
-          >
-            Eliminar este movimiento
-          </button>
-        </div>
-      )}
     </>
   );
 }

@@ -23,6 +23,16 @@ export type TransactionFormValues = {
   expenseCategory: ExpenseCategory | null;
 };
 
+// Opciones fijas para los selects; "Otro…" despliega un input de texto libre.
+const FIXED_PAYERS = ["Nico", "Rafa", "Ranic Group LLC", "Amazon"];
+const FIXED_METHODS = [
+  "Credit Card",
+  "Debit Card",
+  "Transferencia",
+  "Credit Card Rafa",
+];
+const OTHER = "__other__";
+
 const inputCls =
   "w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-olive";
 const labelCls =
@@ -41,38 +51,50 @@ function emptyValues(): TransactionFormValues {
   };
 }
 
+/** ¿El valor cae fuera de la lista fija (y no es vacío)? → modo "Otro…". */
+function isCustom(value: string, fixed: string[]): boolean {
+  return value !== "" && !fixed.includes(value);
+}
+
 export function TransactionForm({
   open,
   onClose,
   initial,
   onSave,
+  onDelete,
 }: {
   open: boolean;
   onClose: () => void;
   initial?: Transaction;
   onSave: (values: TransactionFormValues) => Promise<void> | void;
+  onDelete?: () => Promise<void> | void;
 }) {
   const [values, setValues] = useState<TransactionFormValues>(emptyValues);
+  const [payerOther, setPayerOther] = useState(false);
+  const [methodOther, setMethodOther] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setValues(
-      initial
-        ? {
-            date: initial.date,
-            type: initial.type,
-            description: initial.description,
-            amount: initial.amount,
-            payer: initial.payer,
-            method: initial.method,
-            incomeSource: initial.incomeSource,
-            expenseCategory: initial.expenseCategory,
-          }
-        : emptyValues(),
-    );
+    setConfirmDelete(false);
+    const next = initial
+      ? {
+          date: initial.date,
+          type: initial.type,
+          description: initial.description,
+          amount: initial.amount,
+          payer: initial.payer,
+          method: initial.method,
+          incomeSource: initial.incomeSource,
+          expenseCategory: initial.expenseCategory,
+        }
+      : emptyValues();
+    setValues(next);
+    setPayerOther(isCustom(next.payer, FIXED_PAYERS));
+    setMethodOther(isCustom(next.method, FIXED_METHODS));
   }, [open, initial]);
 
   function set<K extends keyof TransactionFormValues>(
@@ -223,45 +245,131 @@ export function TransactionForm({
             <label className={labelCls} htmlFor="payer">
               Quién
             </label>
-            <input
+            <select
               id="payer"
               className={inputCls}
-              value={values.payer}
-              onChange={(e) => set("payer", e.target.value)}
-              placeholder="Nico, Rafa, Ranic Group LLC…"
-            />
+              value={payerOther ? OTHER : values.payer}
+              onChange={(e) => {
+                if (e.target.value === OTHER) {
+                  setPayerOther(true);
+                  set("payer", "");
+                } else {
+                  setPayerOther(false);
+                  set("payer", e.target.value);
+                }
+              }}
+            >
+              <option value="">Seleccionar…</option>
+              {FIXED_PAYERS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+              <option value={OTHER}>Otro…</option>
+            </select>
+            {payerOther && (
+              <input
+                aria-label="Quién (otro)"
+                className={`${inputCls} mt-2`}
+                value={values.payer}
+                onChange={(e) => set("payer", e.target.value)}
+                placeholder="Escribir quién…"
+              />
+            )}
           </div>
           <div>
             <label className={labelCls} htmlFor="method">
               Método
             </label>
-            <input
+            <select
               id="method"
               className={inputCls}
-              value={values.method}
-              onChange={(e) => set("method", e.target.value)}
-              placeholder="Credit Card, Transferencia…"
-            />
+              value={methodOther ? OTHER : values.method}
+              onChange={(e) => {
+                if (e.target.value === OTHER) {
+                  setMethodOther(true);
+                  set("method", "");
+                } else {
+                  setMethodOther(false);
+                  set("method", e.target.value);
+                }
+              }}
+            >
+              <option value="">Seleccionar…</option>
+              {FIXED_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+              <option value={OTHER}>Otro…</option>
+            </select>
+            {methodOther && (
+              <input
+                aria-label="Método (otro)"
+                className={`${inputCls} mt-2`}
+                value={values.method}
+                onChange={(e) => set("method", e.target.value)}
+                placeholder="Escribir método…"
+              />
+            )}
           </div>
         </div>
 
         {error && <p className="text-sm text-status-overdue">{error}</p>}
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-control px-4 py-2 text-sm text-ink-soft hover:text-ink"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-control bg-olive px-4 py-2 text-sm font-medium text-stone transition-colors hover:bg-olive-deep disabled:opacity-60"
-          >
-            {saving ? "Guardando…" : "Guardar"}
-          </button>
+        {/* Acciones: eliminar (solo al editar) a la izquierda, cancelar/guardar a la derecha */}
+        <div className="flex items-center justify-between gap-2 border-t border-line pt-4">
+          {initial && onDelete ? (
+            confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-status-overdue">¿Eliminar?</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onDelete();
+                    onClose();
+                  }}
+                  className="rounded-control bg-status-overdue px-3 py-1.5 text-xs font-medium text-white"
+                >
+                  Sí, eliminar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-xs text-ink-soft hover:text-ink"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="text-sm text-status-overdue hover:underline"
+              >
+                Eliminar
+              </button>
+            )
+          ) : (
+            <span />
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-control px-4 py-2 text-sm text-ink-soft hover:text-ink"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-control bg-olive px-4 py-2 text-sm font-medium text-stone transition-colors hover:bg-olive-deep disabled:opacity-60"
+            >
+              {saving ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>
