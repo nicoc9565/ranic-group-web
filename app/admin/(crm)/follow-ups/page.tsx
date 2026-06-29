@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { FollowUpTrack } from "@/components/FollowUpTrack";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,7 +12,7 @@ import {
 } from "@/lib/followup";
 import { formatDate, todayISO } from "@/lib/format";
 import { subscribeProviders, updateProvider } from "@/lib/providers";
-import type { Provider } from "@/lib/types";
+import type { EmailType, Provider } from "@/lib/types";
 
 const URGENCY = { overdue: 0, today: 1, ontrack: 2, none: 3 } as const;
 const LABEL = {
@@ -24,6 +25,14 @@ const TEXT = {
   today: "text-status-today",
   ontrack: "text-status-ontrack",
 } as const;
+
+/** Tipo de email sugerido para el próximo paso de la secuencia (según followUpStep). */
+function emailTypeForStep(step: number): EmailType {
+  if (step === -1) return "first_short";
+  if (step === 0) return "followup_4";
+  if (step === 1) return "followup_7";
+  return "last_attempt_12";
+}
 
 export default function FollowUpsPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -110,6 +119,12 @@ export default function FollowUpsPage() {
                   </p>
                 </div>
 
+                <Link
+                  href={`/admin/emails?provider=${p.id}&type=${emailTypeForStep(p.followUpStep)}`}
+                  className="shrink-0 rounded-control border border-olive px-3 py-2 text-sm font-medium text-olive transition-colors hover:bg-olive/10"
+                >
+                  Redactar email
+                </Link>
                 <button
                   type="button"
                   onClick={() => markSent(p)}
