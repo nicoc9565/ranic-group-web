@@ -10,8 +10,8 @@ import type { Provider } from "@/lib/types";
 
 const IN_PROGRESS: Provider["status"][] = [
   "Contactado",
-  "Esperando respuesta",
-  "En negociación",
+  "En Espera de Respuesta",
+  "En Negociación",
 ];
 
 // Orden de urgencia para las alertas.

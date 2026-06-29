@@ -10,11 +10,16 @@ export type Category =
   | "General Merchandise";
 
 export type Status =
+  | "Por Contactar"
   | "Contactado"
-  | "Esperando respuesta"
-  | "En negociación"
+  | "En Espera de Respuesta"
+  | "En Negociación"
   | "Aprobado"
-  | "Descartado";
+  | "Rechazado"
+  | "No Acepta Nuevos"
+  | "Referido";
+
+export type ContactMethod = "Email" | "Llamada" | "Web";
 
 /** Entrada del log de notas: solo-append, en orden cronológico (no se edita el pasado). */
 export type NoteEntry = {
@@ -27,9 +32,13 @@ export type Provider = {
   company: string;
   contact: string;
   email: string;
+  phone: string;
+  address: string;
   category: Category;
   status: Status;
   website: string;
+  contactMethod: ContactMethod;
+  score: number;
   blacklisted: boolean;
   /** Fecha del primer email; base de la secuencia de follow-up. null si no se contactó aún. */
   firstContactDate: string | null;
@@ -83,12 +92,17 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const STATUSES: Status[] = [
+  "Por Contactar",
   "Contactado",
-  "Esperando respuesta",
-  "En negociación",
+  "En Espera de Respuesta",
+  "En Negociación",
   "Aprobado",
-  "Descartado",
+  "Rechazado",
+  "No Acepta Nuevos",
+  "Referido",
 ];
+
+export const CONTACT_METHODS: ContactMethod[] = ["Email", "Llamada", "Web"];
 
 // Labels en español para los tipos de email (contenido en inglés).
 export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {

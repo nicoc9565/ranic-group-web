@@ -2,11 +2,14 @@ import type { Status } from "@/lib/types";
 
 // Punto de color por estado del proveedor (semáforo logístico, tonos apagados).
 const DOT: Record<Status, string> = {
-  Aprobado: "bg-status-ontrack",
-  "En negociación": "bg-status-today",
+  "Por Contactar": "bg-ink-soft",
   Contactado: "bg-ink-soft",
-  "Esperando respuesta": "bg-ink-soft",
-  Descartado: "bg-status-overdue",
+  "En Espera de Respuesta": "bg-status-today",
+  "En Negociación": "bg-status-today",
+  Aprobado: "bg-status-ontrack",
+  Rechazado: "bg-status-overdue",
+  "No Acepta Nuevos": "bg-status-overdue",
+  Referido: "bg-ink-soft",
 };
 
 /** Pill de estado del proveedor con punto de color del semáforo. */

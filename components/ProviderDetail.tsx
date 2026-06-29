@@ -78,6 +78,22 @@ export function ProviderDetail({
             <p className={labelCls}>Email</p>
             <p className="break-all font-mono text-sm text-ink">{provider.email}</p>
           </div>
+          <div>
+            <p className={labelCls}>Teléfono</p>
+            <p className="font-mono text-sm text-ink">{provider.phone || "—"}</p>
+          </div>
+          <div>
+            <p className={labelCls}>Método de Contacto</p>
+            <p className="text-sm text-ink">{provider.contactMethod}</p>
+          </div>
+          <div>
+            <p className={labelCls}>Score</p>
+            <p className="font-mono text-sm text-ink">{provider.score}/5</p>
+          </div>
+          <div className="sm:col-span-2">
+            <p className={labelCls}>Dirección</p>
+            <p className="text-sm text-ink">{provider.address || "—"}</p>
+          </div>
           <div className="sm:col-span-2">
             <p className={labelCls}>Website</p>
             {provider.website ? (
@@ -95,19 +111,23 @@ export function ProviderDetail({
           </div>
         </div>
 
-        {/* Follow-up Track */}
-        <div className="rounded-card border border-line bg-stone/50 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <p className={labelCls}>Secuencia de follow-up</p>
-            <p className="font-mono text-xs text-ink-soft">{nextLabel(provider, today)}</p>
+        {/* Follow-up Track — solo para proveedores contactados por Email (spec §4) */}
+        {provider.contactMethod === "Email" && (
+          <div className="rounded-card border border-line bg-stone/50 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className={labelCls}>Secuencia de follow-up</p>
+              <p className="font-mono text-xs text-ink-soft">
+                {nextLabel(provider, today)}
+              </p>
+            </div>
+            <FollowUpTrack
+              followUpStep={provider.followUpStep}
+              status={status}
+              firstContactDate={provider.firstContactDate}
+              showDates
+            />
           </div>
-          <FollowUpTrack
-            followUpStep={provider.followUpStep}
-            status={status}
-            firstContactDate={provider.firstContactDate}
-            showDates
-          />
-        </div>
+        )}
 
         {/* Notas — log cronológico solo-append */}
         <div>

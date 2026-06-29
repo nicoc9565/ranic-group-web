@@ -7,7 +7,11 @@ import {
 } from "../followup";
 import type { Provider } from "../types";
 
-const base = { firstContactDate: "2026-06-01", followUpStep: 0 } as Provider;
+const base = {
+  firstContactDate: "2026-06-01",
+  followUpStep: 0,
+  contactMethod: "Email",
+} as Provider;
 
 describe("FOLLOWUP_DAYS", () => {
   test("es la secuencia [1, 4, 7, 12]", () => {
@@ -31,6 +35,18 @@ describe("nextFollowUpDate", () => {
     expect(
       nextFollowUpDate({ ...base, followUpStep: -1 })?.toISOString().slice(0, 10),
     ).toBe("2026-06-02");
+  });
+  test("contactMethod distinto de Email → null aunque haya firstContactDate", () => {
+    expect(
+      nextFollowUpDate({ ...base, contactMethod: "Web" } as Provider),
+    ).toBeNull();
+  });
+  test("contactMethod Email → calcula normalmente", () => {
+    expect(
+      nextFollowUpDate({ ...base, contactMethod: "Email" } as Provider)
+        ?.toISOString()
+        .slice(0, 10),
+    ).toBe("2026-06-05");
   });
 });
 

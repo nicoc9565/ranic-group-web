@@ -51,7 +51,7 @@ export function ProviderTable({
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-line">
-            {["Empresa", "Contacto", "Categoría", "Estado", "Próximo"].map((h) => (
+            {["Empresa", "Contacto", "Categoría", "Estado", "Score", "Próximo"].map((h) => (
               <th
                 key={h}
                 className="px-4 py-2.5 font-eyebrow text-[10px] uppercase tracking-[0.15em] text-ink-soft"
@@ -73,6 +73,9 @@ export function ProviderTable({
               <td className="px-4 py-3 text-ink-soft">{p.category}</td>
               <td className="px-4 py-3">
                 <StatusBadge status={p.status} />
+              </td>
+              <td className="px-4 py-3 font-mono text-xs text-ink-soft">
+                {p.score}/5
               </td>
               <td className="px-4 py-3">
                 <NextCell provider={p} today={today} />
