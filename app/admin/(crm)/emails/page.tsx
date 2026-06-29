@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { advanceFollowUp } from "@/lib/followup";
 import { generateEmail } from "@/lib/emails";
+import { generateEmailEs } from "@/lib/emailsEs";
 import { todayISO } from "@/lib/format";
 import { subscribeProviders, updateProvider } from "@/lib/providers";
 import {
@@ -26,6 +27,7 @@ export default function EmailsPage() {
   const [copied, setCopied] = useState(false);
   const [marking, setMarking] = useState(false);
   const [marked, setMarked] = useState(false);
+  const [showEs, setShowEs] = useState(false);
 
   useEffect(() => subscribeProviders(setProviders), []);
 
@@ -36,6 +38,11 @@ export default function EmailsPage() {
 
   const email = useMemo(
     () => (provider ? generateEmail(emailType, provider) : ""),
+    [provider, emailType],
+  );
+
+  const emailEs = useMemo(
+    () => (provider ? generateEmailEs(emailType, provider) : ""),
     [provider, emailType],
   );
 
@@ -117,6 +124,32 @@ export default function EmailsPage() {
           rows={18}
           className="w-full resize-y rounded-card border border-line bg-surface p-4 font-mono text-[13px] leading-relaxed text-ink outline-none"
         />
+      </div>
+
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setShowEs((v) => !v)}
+          disabled={!email}
+          className="text-sm text-olive hover:underline disabled:no-underline disabled:opacity-50"
+        >
+          {showEs ? "Ocultar traducción" : "Ver traducción (referencia)"}
+        </button>
+        {showEs && (
+          <div className="mt-2">
+            <p className="mb-1 text-xs text-ink-soft">
+              Traducción de referencia — copiá y enviá siempre el texto en inglés de
+              arriba.
+            </p>
+            <textarea
+              readOnly
+              aria-label="Traducción de referencia en español"
+              value={emailEs || "Elegí un proveedor para ver la traducción."}
+              rows={18}
+              className="w-full resize-y rounded-card border border-dashed border-line bg-stone/40 p-4 font-mono text-[13px] leading-relaxed text-ink-soft outline-none"
+            />
+          </div>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
