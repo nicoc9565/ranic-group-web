@@ -66,11 +66,6 @@ export default function FinanzasPage() {
     return [...totals.entries()];
   }, [transactions]);
 
-  const sorted = useMemo(
-    () => [...transactions].sort((a, b) => b.date.localeCompare(a.date)),
-    [transactions],
-  );
-
   const editingTransaction = editId
     ? transactions.find((t) => t.id === editId)
     : undefined;
@@ -156,7 +151,10 @@ export default function FinanzasPage() {
         {!loaded ? (
           <p className="font-mono text-sm text-ink-soft">Cargando…</p>
         ) : (
-          <TransactionTable transactions={sorted} onRowClick={handleRowClick} />
+          <TransactionTable
+            transactions={transactions}
+            onRowClick={handleRowClick}
+          />
         )}
       </section>
 
