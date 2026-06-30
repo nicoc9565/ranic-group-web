@@ -1,12 +1,42 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { formatDate } from "@/lib/format";
 import type { Transaction } from "@/lib/types";
+
+type SortKey = "date" | "type" | "description" | "category" | "payer" | "amount";
+type SortDir = "asc" | "desc";
+
+const COLUMNS: { key: SortKey; label: string; defaultDir: SortDir }[] = [
+  { key: "date", label: "Fecha", defaultDir: "desc" },
+  { key: "type", label: "Tipo", defaultDir: "asc" },
+  { key: "description", label: "Descripción", defaultDir: "asc" },
+  { key: "category", label: "Categoría", defaultDir: "asc" },
+  { key: "payer", label: "Quién", defaultDir: "asc" },
+  { key: "amount", label: "Monto", defaultDir: "desc" },
+];
 
 function categoryLabel(t: Transaction): string {
   return t.type === "Ingreso"
     ? (t.incomeSource ?? "—")
     : (t.expenseCategory ?? "—");
+}
+
+function sortValue(t: Transaction, key: SortKey): string | number {
+  switch (key) {
+    case "date":
+      return t.date;
+    case "type":
+      return t.type;
+    case "description":
+      return t.description.toLowerCase();
+    case "category":
+      return categoryLabel(t).toLowerCase();
+    case "payer":
+      return (t.payer || "").toLowerCase();
+    case "amount":
+      return t.amount;
+  }
 }
 
 export function TransactionTable({
@@ -16,6 +46,29 @@ export function TransactionTable({
   transactions: Transaction[];
   onRowClick: (t: Transaction) => void;
 }) {
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function toggleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(COLUMNS.find((c) => c.key === key)!.defaultDir);
+    }
+  }
+
+  const sorted = useMemo(() => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...transactions].sort((a, b) => {
+      const va = sortValue(a, sortKey);
+      const vb = sortValue(b, sortKey);
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+  }, [transactions, sortKey, sortDir]);
+
   if (transactions.length === 0) {
     return (
       <div className="rounded-card border border-dashed border-line bg-surface px-4 py-10 text-center">
@@ -32,20 +85,24 @@ export function TransactionTable({
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-line">
-            {["Fecha", "Tipo", "Descripción", "Categoría", "Quién", "Monto"].map(
-              (h) => (
-                <th
-                  key={h}
-                  className="px-4 py-2.5 font-eyebrow text-[10px] uppercase tracking-[0.15em] text-ink-soft"
+            {COLUMNS.map((c) => (
+              <th key={c.key} className="px-4 py-2.5">
+                <button
+                  type="button"
+                  onClick={() => toggleSort(c.key)}
+                  className="flex items-center gap-1 font-eyebrow text-[10px] uppercase tracking-[0.15em] text-ink-soft transition-colors hover:text-ink"
                 >
-                  {h}
-                </th>
-              ),
-            )}
+                  {c.label}
+                  {sortKey === c.key && (
+                    <span aria-hidden>{sortDir === "asc" ? "▲" : "▼"}</span>
+                  )}
+                </button>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {transactions.map((t) => (
+          {sorted.map((t) => (
             <tr
               key={t.id}
               onClick={() => onRowClick(t)}
