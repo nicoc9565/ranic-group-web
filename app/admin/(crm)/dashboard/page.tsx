@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FollowUpAlert } from "@/components/FollowUpAlert";
 import { MetricCard } from "@/components/MetricCard";
 import { PageHeader } from "@/components/PageHeader";
+import { TaskForm } from "@/components/TaskForm";
+import { TaskList } from "@/components/TaskList";
 import { followUpStatus } from "@/lib/followup";
 import { subscribeProviders } from "@/lib/providers";
+import { subscribeTasks, type Task } from "@/lib/tasks";
 import type { Provider } from "@/lib/types";
 
 const IN_PROGRESS: Provider["status"][] = [
@@ -14,23 +17,21 @@ const IN_PROGRESS: Provider["status"][] = [
   "En Negociación",
 ];
 
-// Orden de urgencia para las alertas.
-const URGENCY = { overdue: 0, today: 1, ontrack: 2, none: 3 } as const;
-
 export default function DashboardPage() {
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  useEffect(() => subscribeProviders(setProviders), []);
   useEffect(
     () =>
-      subscribeProviders((list) => {
-        setProviders(list);
+      subscribeTasks((list) => {
+        setTasks(list);
         setLoaded(true);
       }),
     [],
   );
 
-  // Fecha de hoy estable durante el render.
   const today = useMemo(() => new Date(), []);
 
   const metrics = useMemo(() => {
@@ -45,17 +46,11 @@ export default function DashboardPage() {
     return { total: providers.length, aprobados, enProceso, pendientesHoy };
   }, [providers, today]);
 
-  const alerts = useMemo(() => {
-    return providers
-      .map((p) => ({ p, s: followUpStatus(p, today) }))
-      .filter(({ s }) => s === "overdue" || s === "today")
-      .sort((a, b) => URGENCY[a.s] - URGENCY[b.s]);
-  }, [providers, today]);
-
   return (
     <>
       <PageHeader eyebrow="Resumen" title="Dashboard" />
 
+      {/* Métricas */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard label="Proveedores" value={metrics.total} />
         <MetricCard label="Aprobados" value={metrics.aprobados} accent />
@@ -63,28 +58,41 @@ export default function DashboardPage() {
         <MetricCard label="Follow-ups hoy" value={metrics.pendientesHoy} accent />
       </section>
 
+      {/* Tareas */}
       <section className="mt-8">
         <h2 className="mb-3 font-eyebrow text-[11px] uppercase tracking-[0.2em] text-ink-soft">
-          Follow-ups pendientes
+          Tareas
         </h2>
 
         {!loaded ? (
           <p className="font-mono text-sm text-ink-soft">Cargando…</p>
-        ) : alerts.length === 0 ? (
-          <div className="rounded-card border border-dashed border-line bg-surface px-4 py-8 text-center">
-            <p className="text-sm text-ink">Nada pendiente para hoy.</p>
-            <p className="mt-1 text-xs text-ink-soft">
-              No hay follow-ups vencidos ni que venzan hoy.
-            </p>
-          </div>
         ) : (
-          <div className="space-y-2">
-            {alerts.map(({ p }) => (
-              <FollowUpAlert key={p.id} provider={p} today={today} />
-            ))}
+          <div className="space-y-3">
+            <TaskForm />
+            <TaskList tasks={tasks} />
           </div>
         )}
       </section>
+
+      {/* Banner follow-ups compacto */}
+      {metrics.pendientesHoy > 0 && (
+        <section className="mt-6">
+          <div className="flex items-center justify-between rounded-card border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-medium text-amber-800">
+              Tenés {metrics.pendientesHoy} follow-up
+              {metrics.pendientesHoy === 1 ? "" : "s"} vencido
+              {metrics.pendientesHoy === 1 ? "" : "s"} o que vence
+              {metrics.pendientesHoy === 1 ? "" : "n"} hoy
+            </p>
+            <Link
+              href="/admin/follow-ups"
+              className="text-sm font-medium text-amber-800 underline hover:text-amber-900"
+            >
+              Ver todos →
+            </Link>
+          </div>
+        </section>
+      )}
     </>
   );
 }
