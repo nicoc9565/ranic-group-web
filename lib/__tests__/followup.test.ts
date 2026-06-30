@@ -48,6 +48,11 @@ describe("nextFollowUpDate", () => {
         .slice(0, 10),
     ).toBe("2026-06-05");
   });
+  test("followUpStopped → null aunque haya secuencia activa", () => {
+    expect(
+      nextFollowUpDate({ ...base, followUpStopped: true } as Provider),
+    ).toBeNull();
+  });
 });
 
 describe("followUpStatus", () => {

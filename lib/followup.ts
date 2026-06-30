@@ -17,6 +17,8 @@ function toDayStr(d: Date): string {
  * Devuelve null si no hay firstContactDate o si la secuencia se agotó (followUpStep >= 3).
  */
 export function nextFollowUpDate(p: Provider): Date | null {
+  // Seguimiento detenido manualmente: no hay próximo follow-up (sale de Follow-ups/Dashboard).
+  if (p.followUpStopped) return null;
   // El Follow-up Track asume una secuencia de emails que Nico controla. Si el contacto fue
   // por Web o Llamada, no hay secuencia corriendo → no se calcula follow-up (spec §4).
   if (p.contactMethod !== "Email") return null;

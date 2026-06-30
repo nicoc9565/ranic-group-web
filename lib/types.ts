@@ -46,6 +46,8 @@ export type Provider = {
   lastEmailDate: string | null;
   /** Índice del último email de la secuencia enviado. -1 = ningún email enviado. */
   followUpStep: number;
+  /** true = se detuvo manualmente el seguimiento; no aparece en Follow-ups aunque haya secuencia activa. */
+  followUpStopped?: boolean;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
