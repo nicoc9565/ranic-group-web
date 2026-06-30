@@ -53,6 +53,12 @@ const icons = {
       <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
     </svg>
   ),
+  stock: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" />
+      <path d="M3 7.5V16l9 4.5 9-4.5V7.5M12 12v8.5" />
+    </svg>
+  ),
 };
 
 const NAV: NavItem[] = [
@@ -63,6 +69,7 @@ const NAV: NavItem[] = [
   { href: "/admin/blacklist", label: "Blacklist", icon: icons.blacklist },
   { href: "/admin/expo-west", label: "Expo West", icon: icons.expo },
   { href: "/admin/finanzas", label: "Finanzas", icon: icons.finanzas },
+  { href: "/admin/stock", label: "Stock", icon: icons.stock },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -143,7 +150,7 @@ export function Nav({
       </header>
 
       {/* Bottom nav — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-line bg-olive-deep text-olive-tint md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-8 border-t border-line bg-olive-deep text-olive-tint md:hidden">
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (

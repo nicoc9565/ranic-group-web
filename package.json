@@ -12,7 +12,8 @@
     "import-expo": "tsx scripts/import-expo.ts",
     "import-providers": "tsx scripts/import-providers.ts",
     "import-transactions": "tsx scripts/import-transactions.ts",
-    "import-amazon-transactions": "tsx scripts/import-amazon-transactions.ts"
+    "import-amazon-transactions": "tsx scripts/import-amazon-transactions.ts",
+    "import-stock": "tsx scripts/import-stock.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

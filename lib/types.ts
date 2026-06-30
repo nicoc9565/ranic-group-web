@@ -160,3 +160,21 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "Educación",
   "Otros",
 ];
+
+// ── Stock (inventario FBA de Amazon) ──────────────────────────────────────
+
+export type StockItem = {
+  id: string;
+  snapshotDate: string; // yyyy-mm-dd
+  sku: string;
+  asin: string;
+  productName: string;
+  available: number;
+  unitsShipped30: number;
+  unitsShipped90: number;
+  daysOfSupply: number | null;
+  price: number;
+  healthStatus: string; // "Healthy" | "Low stock" | "Excess" | ""
+  alert: string; // "Low traffic" | "Low conversion" | ""
+  createdAt: number;
+};
