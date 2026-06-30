@@ -14,7 +14,11 @@ import {
   subscribeTransactions,
   updateTransaction,
 } from "@/lib/transactions";
-import { EXPENSE_CATEGORIES, type Transaction } from "@/lib/types";
+import {
+  EXPENSE_CATEGORIES,
+  INCOME_SOURCES,
+  type Transaction,
+} from "@/lib/types";
 
 export default function FinanzasPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -61,6 +65,17 @@ export default function FinanzasPage() {
           t.expenseCategory,
           (totals.get(t.expenseCategory) ?? 0) + t.amount,
         );
+      }
+    }
+    return [...totals.entries()];
+  }, [transactions]);
+
+  const byIncomeSource = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const src of INCOME_SOURCES) totals.set(src, 0);
+    for (const t of transactions) {
+      if (t.type === "Ingreso" && t.incomeSource) {
+        totals.set(t.incomeSource, (totals.get(t.incomeSource) ?? 0) + t.amount);
       }
     }
     return [...totals.entries()];
@@ -124,23 +139,45 @@ export default function FinanzasPage() {
         />
       </section>
 
-      <section className="mt-8">
-        <h2 className="mb-3 font-eyebrow text-[11px] uppercase tracking-[0.2em] text-ink-soft">
-          Egresos por categoría
-        </h2>
-        <div className="overflow-hidden rounded-card border border-line bg-surface">
-          <table className="w-full text-left text-sm">
-            <tbody>
-              {byCategory.map(([cat, total]) => (
-                <tr key={cat} className="border-b border-line last:border-0">
-                  <td className="px-4 py-2.5 text-ink">{cat}</td>
-                  <td className="px-4 py-2.5 text-right font-mono text-ink-soft">
-                    ${total.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <h2 className="mb-3 font-eyebrow text-[11px] uppercase tracking-[0.2em] text-ink-soft">
+            Egresos por categoría
+          </h2>
+          <div className="overflow-hidden rounded-card border border-line bg-surface">
+            <table className="w-full text-left text-sm">
+              <tbody>
+                {byCategory.map(([cat, total]) => (
+                  <tr key={cat} className="border-b border-line last:border-0">
+                    <td className="px-4 py-2.5 text-ink">{cat}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-ink-soft">
+                      ${total.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="mb-3 font-eyebrow text-[11px] uppercase tracking-[0.2em] text-ink-soft">
+            Ingresos por categoría
+          </h2>
+          <div className="overflow-hidden rounded-card border border-line bg-surface">
+            <table className="w-full text-left text-sm">
+              <tbody>
+                {byIncomeSource.map(([src, total]) => (
+                  <tr key={src} className="border-b border-line last:border-0">
+                    <td className="px-4 py-2.5 text-ink">{src}</td>
+                    <td className="px-4 py-2.5 text-right font-mono text-ink-soft">
+                      ${total.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
