@@ -53,6 +53,22 @@ describe("nextFollowUpDate", () => {
       nextFollowUpDate({ ...base, followUpStopped: true } as Provider),
     ).toBeNull();
   });
+  test("followUpForced permite tracking aunque contactMethod no sea Email", () => {
+    expect(
+      nextFollowUpDate({
+        ...base,
+        contactMethod: "Llamada",
+        followUpForced: true,
+      } as Provider)
+        ?.toISOString()
+        .slice(0, 10),
+    ).toBe("2026-06-05");
+  });
+  test("sin followUpForced, contactMethod distinto de Email sigue devolviendo null", () => {
+    expect(
+      nextFollowUpDate({ ...base, contactMethod: "Web" } as Provider),
+    ).toBeNull();
+  });
 });
 
 describe("followUpStatus", () => {
