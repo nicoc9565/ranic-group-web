@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FOLLOWUP_DAYS, followUpStatus, nextFollowUpDate } from "@/lib/followup";
-import { formatDate } from "@/lib/format";
+import { formatDate, todayISO } from "@/lib/format";
 import type { Provider } from "@/lib/types";
 import { FollowUpTrack } from "./FollowUpTrack";
 import { Modal } from "./Modal";
@@ -26,6 +26,7 @@ export function ProviderDetail({
   onAddNote,
   onDelete,
   onResumeFollowUp,
+  onStartFollowUp,
 }: {
   provider: Provider;
   today: Date;
@@ -34,12 +35,26 @@ export function ProviderDetail({
   onAddNote: (text: string) => Promise<void> | void;
   onDelete: () => Promise<void> | void;
   onResumeFollowUp: () => Promise<void> | void;
+  onStartFollowUp: (patch: Partial<Provider>) => Promise<void> | void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [adding, setAdding] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const status = followUpStatus(provider, today);
+  const trackingActive =
+    (provider.contactMethod === "Email" || provider.followUpForced) &&
+    !!provider.firstContactDate;
+
+  function startFollowUp() {
+    const patch: Partial<Provider> = { followUpForced: true };
+    if (!provider.firstContactDate) {
+      patch.firstContactDate = todayISO();
+      patch.followUpStep = 0;
+    }
+    return onStartFollowUp(patch);
+  }
+
   const notes = [...provider.notes].sort((a, b) => a.date.localeCompare(b.date));
 
   async function handleAddNote() {
@@ -113,40 +128,46 @@ export function ProviderDetail({
           </div>
         </div>
 
-        {/* Follow-up Track — solo para proveedores contactados por Email (spec §4) */}
-        {provider.contactMethod === "Email" && (
-          <div className="rounded-card border border-line bg-stone/50 p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <p className={labelCls}>Secuencia de follow-up</p>
-                {provider.followUpStopped && (
-                  <span className="rounded-full bg-ink-soft/15 px-2 py-0.5 text-xs text-ink-soft">
-                    Seguimiento detenido
-                  </span>
-                )}
-              </div>
-              {provider.followUpStopped ? (
-                <button
-                  type="button"
-                  onClick={() => onResumeFollowUp()}
-                  className="text-xs font-medium text-olive hover:underline"
-                >
-                  Reanudar seguimiento
-                </button>
-              ) : (
-                <p className="font-mono text-xs text-ink-soft">
-                  {nextLabel(provider, today)}
-                </p>
+        {/* Follow-up Track — se muestra siempre; el tracking en sí solo corre si está activo */}
+        <div className="rounded-card border border-line bg-stone/50 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <p className={labelCls}>Secuencia de follow-up</p>
+              {provider.followUpStopped && (
+                <span className="rounded-full bg-ink-soft/15 px-2 py-0.5 text-xs text-ink-soft">
+                  Seguimiento detenido
+                </span>
               )}
             </div>
-            <FollowUpTrack
-              followUpStep={provider.followUpStep}
-              status={status}
-              firstContactDate={provider.firstContactDate}
-              showDates
-            />
+            {provider.followUpStopped ? (
+              <button
+                type="button"
+                onClick={() => onResumeFollowUp()}
+                className="text-xs font-medium text-olive hover:underline"
+              >
+                Reanudar seguimiento
+              </button>
+            ) : trackingActive ? (
+              <p className="font-mono text-xs text-ink-soft">
+                {nextLabel(provider, today)}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={startFollowUp}
+                className="text-xs font-medium text-olive hover:underline"
+              >
+                Iniciar seguimiento
+              </button>
+            )}
           </div>
-        )}
+          <FollowUpTrack
+            followUpStep={provider.followUpStep}
+            status={status}
+            firstContactDate={provider.firstContactDate}
+            showDates
+          />
+        </div>
 
         {/* Notas — log cronológico solo-append */}
         <div>

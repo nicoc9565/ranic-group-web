@@ -187,6 +187,7 @@ export default function ProveedoresPage() {
           onResumeFollowUp={() =>
             updateProvider(detailProvider.id, { followUpStopped: false })
           }
+          onStartFollowUp={(patch) => updateProvider(detailProvider.id, patch)}
         />
       )}
     </>

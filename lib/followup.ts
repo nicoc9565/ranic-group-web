@@ -20,8 +20,9 @@ export function nextFollowUpDate(p: Provider): Date | null {
   // Seguimiento detenido manualmente: no hay próximo follow-up (sale de Follow-ups/Dashboard).
   if (p.followUpStopped) return null;
   // El Follow-up Track asume una secuencia de emails que Nico controla. Si el contacto fue
-  // por Web o Llamada, no hay secuencia corriendo → no se calcula follow-up (spec §4).
-  if (p.contactMethod !== "Email") return null;
+  // por Web o Llamada, no hay secuencia corriendo → no se calcula follow-up (spec §4),
+  // salvo que Nico fuerce el tracking manualmente (followUpForced).
+  if (p.contactMethod !== "Email" && !p.followUpForced) return null;
   if (!p.firstContactDate) return null;
   const days = FOLLOWUP_DAYS[p.followUpStep + 1];
   if (days === undefined) return null;

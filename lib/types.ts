@@ -48,6 +48,8 @@ export type Provider = {
   followUpStep: number;
   /** true = se detuvo manualmente el seguimiento; no aparece en Follow-ups aunque haya secuencia activa. */
   followUpStopped?: boolean;
+  /** true = fuerza el tracking de follow-up aunque contactMethod no sea "Email". */
+  followUpForced?: boolean;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
