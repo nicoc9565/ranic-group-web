@@ -25,6 +25,7 @@ export function ProviderDetail({
   onEdit,
   onAddNote,
   onDelete,
+  onResumeFollowUp,
 }: {
   provider: Provider;
   today: Date;
@@ -32,6 +33,7 @@ export function ProviderDetail({
   onEdit: () => void;
   onAddNote: (text: string) => Promise<void> | void;
   onDelete: () => Promise<void> | void;
+  onResumeFollowUp: () => Promise<void> | void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [adding, setAdding] = useState(false);
@@ -114,11 +116,28 @@ export function ProviderDetail({
         {/* Follow-up Track — solo para proveedores contactados por Email (spec §4) */}
         {provider.contactMethod === "Email" && (
           <div className="rounded-card border border-line bg-stone/50 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className={labelCls}>Secuencia de follow-up</p>
-              <p className="font-mono text-xs text-ink-soft">
-                {nextLabel(provider, today)}
-              </p>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <p className={labelCls}>Secuencia de follow-up</p>
+                {provider.followUpStopped && (
+                  <span className="rounded-full bg-ink-soft/15 px-2 py-0.5 text-xs text-ink-soft">
+                    Seguimiento detenido
+                  </span>
+                )}
+              </div>
+              {provider.followUpStopped ? (
+                <button
+                  type="button"
+                  onClick={() => onResumeFollowUp()}
+                  className="text-xs font-medium text-olive hover:underline"
+                >
+                  Reanudar seguimiento
+                </button>
+              ) : (
+                <p className="font-mono text-xs text-ink-soft">
+                  {nextLabel(provider, today)}
+                </p>
+              )}
             </div>
             <FollowUpTrack
               followUpStep={provider.followUpStep}

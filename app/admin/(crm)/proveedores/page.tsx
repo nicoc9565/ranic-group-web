@@ -184,6 +184,9 @@ export default function ProveedoresPage() {
             await deleteProvider(detailProvider.id);
             setDetailId(null);
           }}
+          onResumeFollowUp={() =>
+            updateProvider(detailProvider.id, { followUpStopped: false })
+          }
         />
       )}
     </>
