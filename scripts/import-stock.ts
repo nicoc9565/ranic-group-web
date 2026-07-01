@@ -11,52 +11,20 @@
  */
 import { readFileSync } from "node:fs";
 import "./env";
-import { parse } from "csv-parse/sync";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { collection, doc, writeBatch } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
-import type { StockItem } from "../lib/types";
+import {
+  parseInventoryCsv,
+  type ParsedStockItem,
+} from "../lib/parseInventoryCsv";
 
 const CSV_PATH =
   "C:/Nico-Archivos/ClaudeCode/Ranic-Group/Inventario de Logística de Amazon.csv";
 
-type ParsedStockItem = Omit<StockItem, "id" | "createdAt">;
-
-type CsvRow = Record<string, string>;
-
-function num(value: string | undefined): number {
-  const n = Number((value ?? "").trim());
-  return Number.isFinite(n) ? n : 0;
-}
-
-function numOrNull(value: string | undefined): number | null {
-  const trimmed = (value ?? "").trim();
-  if (trimmed === "") return null;
-  const n = Number(trimmed);
-  return Number.isFinite(n) ? n : null;
-}
-
 function parseRows(): ParsedStockItem[] {
   const csv = readFileSync(CSV_PATH, "utf8");
-  const rows: CsvRow[] = parse(csv, {
-    columns: true,
-    skip_empty_lines: true,
-    bom: true,
-  });
-
-  return rows.map((row) => ({
-    snapshotDate: (row["snapshot-date"] ?? "").trim(),
-    sku: (row["sku"] ?? "").trim(),
-    asin: (row["asin"] ?? "").trim(),
-    productName: (row["product-name"] ?? "").trim(),
-    available: num(row["available"]),
-    unitsShipped30: num(row["units-shipped-t30"]),
-    unitsShipped90: num(row["units-shipped-t90"]),
-    daysOfSupply: numOrNull(row["days-of-supply"]),
-    price: num(row["your-price"]),
-    healthStatus: (row["fba-inventory-level-health-status"] ?? "").trim(),
-    alert: (row["alert"] ?? "").trim(),
-  }));
+  return parseInventoryCsv(csv);
 }
 
 async function main() {
