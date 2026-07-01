@@ -7,6 +7,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import type { ParsedStockItem } from "./parseInventoryCsv";
 import type { SettlementParseResult } from "./parseSettlement";
 import { buildSettlementDocs } from "./settlementDocs";
 import type { StockItem } from "./types";
@@ -68,5 +69,47 @@ export async function importSettlement(
   for (const ref of toDelete) batch.delete(ref);
   for (const t of transactions) batch.set(doc(collection(db, TX)), t);
   for (const s of skuSales) batch.set(doc(collection(db, SKU)), s);
+  await batch.commit();
+}
+
+/** ¿Ya existe un snapshot de inventario con esta fecha? */
+export async function inventorySnapshotExists(
+  snapshotDate: string,
+): Promise<boolean> {
+  const snap = await getDocs(
+    query(collection(db, STOCK), where("snapshotDate", "==", snapshotDate)),
+  );
+  return !snap.empty;
+}
+
+/**
+ * Escribe (o reemplaza) un snapshot de inventario. Si `replace`, borra primero TODOS los
+ * stockItems con esa snapshotDate (el inventario es un corte completo, no hay filas a mano).
+ */
+export async function importInventory(
+  items: ParsedStockItem[],
+  replace: boolean,
+): Promise<void> {
+  const snapshotDate = items[0]?.snapshotDate ?? "";
+
+  const toDelete: Parameters<ReturnType<typeof writeBatch>["delete"]>[0][] = [];
+  if (replace) {
+    const snap = await getDocs(
+      query(collection(db, STOCK), where("snapshotDate", "==", snapshotDate)),
+    );
+    snap.forEach((d) => toDelete.push(d.ref));
+  }
+
+  const now = Date.now();
+  const batch = writeBatch(db);
+  for (const ref of toDelete) batch.delete(ref);
+  for (const it of items) {
+    batch.set(doc(collection(db, STOCK)), {
+      ...it,
+      importSource: "amazon-inventory",
+      importPeriod: snapshotDate,
+      createdAt: now,
+    });
+  }
   await batch.commit();
 }
