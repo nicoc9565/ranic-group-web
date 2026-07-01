@@ -10,7 +10,7 @@ import { StatusBadge } from "./StatusBadge";
 
 const labelCls = "font-eyebrow text-[10px] uppercase tracking-[0.18em] text-ink-soft";
 
-function nextLabel(p: Provider, today: Date): string {
+function nextLabel(p: Provider): string {
   if (!p.firstContactDate) return "Sin contactar";
   if (p.followUpStep >= 3) return "Secuencia agotada";
   const next = nextFollowUpDate(p);
@@ -149,7 +149,7 @@ export function ProviderDetail({
               </button>
             ) : trackingActive ? (
               <p className="font-mono text-xs text-ink-soft">
-                {nextLabel(provider, today)}
+                {nextLabel(provider)}
               </p>
             ) : (
               <button

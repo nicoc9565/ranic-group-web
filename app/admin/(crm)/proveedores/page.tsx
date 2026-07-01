@@ -34,18 +34,19 @@ export default function ProveedoresPage() {
   const [statusFilter, setStatusFilter] = useState<Status | "">("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "">("");
 
-  const [detailId, setDetailId] = useState<string | null>(null);
+  // Abrir el detalle si venimos con ?id=… (link desde el dashboard). Esta página solo monta
+  // en el cliente (el layout muestra "Cargando…" hasta resolver auth), así que leer la URL en
+  // el inicializador es seguro y evita el setState-en-effect.
+  const [detailId, setDetailId] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("id"),
+  );
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
   useEffect(() => subscribeProviders(setProviders), []);
   useEffect(() => subscribeBlacklist(setBlacklist), []);
-
-  // Abrir el detalle si venimos con ?id=… (link desde el dashboard).
-  useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
-    if (id) setDetailId(id);
-  }, []);
 
   const today = useMemo(() => new Date(), []);
 
@@ -73,10 +74,8 @@ export default function ProveedoresPage() {
     ? providers.find((p) => p.id === editId)
     : undefined;
 
-  // Si el proveedor abierto en detalle se borró, cerrar el detalle.
-  useEffect(() => {
-    if (detailId && !providers.some((p) => p.id === detailId)) setDetailId(null);
-  }, [detailId, providers]);
+  // Nota: si el proveedor abierto se borra, `detailProvider` pasa a null y el modal se cierra
+  // solo (no hace falta un effect que sincronice detailId).
 
   function openNew() {
     setEditId(null);
