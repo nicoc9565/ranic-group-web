@@ -131,6 +131,7 @@ export type ExpenseCategory =
   | "Suscripciones y Software"
   | "Gastos Operativos"
   | "Educación"
+  | "Comisión Amazon"
   | "Otros";
 
 export type Transaction = {
@@ -143,6 +144,10 @@ export type Transaction = {
   method: string; // "Método" — texto libre
   incomeSource: IncomeSource | null; // solo si type === "Ingreso"
   expenseCategory: ExpenseCategory | null; // solo si type === "Egreso"
+  /** Origen del import automático. Ausente en movimientos cargados a mano. */
+  importSource?: "amazon-settlement";
+  /** Corte al que pertenece el movimiento importado (settlement-id). */
+  importPeriod?: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -158,6 +163,7 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "Suscripciones y Software",
   "Gastos Operativos",
   "Educación",
+  "Comisión Amazon",
   "Otros",
 ];
 
@@ -176,5 +182,27 @@ export type StockItem = {
   price: number;
   healthStatus: string; // "Healthy" | "Low stock" | "Excess" | ""
   alert: string; // "Low traffic" | "Low conversion" | ""
+  /** Origen del import automático. Ausente en filas cargadas a mano. */
+  importSource?: "amazon-inventory";
+  /** Corte al que pertenece el item importado (snapshotDate). */
+  importPeriod?: string;
+  createdAt: number;
+};
+
+// ── Rentabilidad por producto (ventas de Amazon por SKU y liquidación) ─────
+
+export type AmazonSkuSale = {
+  id: string;
+  settlementId: string; // = importPeriod
+  periodStart: string; // yyyy-mm-dd
+  periodEnd: string; // yyyy-mm-dd
+  depositDate: string; // yyyy-mm-dd
+  sku: string;
+  productName: string; // se resuelve desde stockItems al escribir; "" si no hay match
+  unitsSold: number; // Order − Refund
+  ventas: number; // money in del SKU
+  gastosAmazon: number; // money out del SKU (positivo)
+  neto: number; // ventas − gastosAmazon
+  importSource: "amazon-settlement";
   createdAt: number;
 };
