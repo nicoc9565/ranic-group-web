@@ -252,7 +252,7 @@ export default function StockPage() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         title="Subir inventario FBA (Amazon)"
-        accept=".csv"
+        accept=".csv,.txt"
         parse={parseInventoryCsv}
         renderPreview={(list) => <InventoryPreview items={list} />}
         canConfirm={(list) => list.length > 0 && !!list[0].snapshotDate}
