@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { isBlacklisted } from "@/lib/blacklist";
 import {
   CATEGORIES,
@@ -35,20 +35,34 @@ const labelCls =
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function emptyValues(): ProviderFormValues {
-  return {
-    company: "",
-    contact: "",
-    email: "",
-    phone: "",
-    address: "",
-    category: CATEGORIES[0],
-    status: STATUSES[0],
-    contactMethod: CONTACT_METHODS[0],
-    score: 0,
-    website: "",
-    blacklisted: false,
-  };
+function initialValues(initial?: Provider): ProviderFormValues {
+  return initial
+    ? {
+        company: initial.company,
+        contact: initial.contact,
+        email: initial.email,
+        phone: initial.phone,
+        address: initial.address,
+        category: initial.category,
+        status: initial.status,
+        contactMethod: initial.contactMethod,
+        score: initial.score,
+        website: initial.website,
+        blacklisted: initial.blacklisted,
+      }
+    : {
+        company: "",
+        contact: "",
+        email: "",
+        phone: "",
+        address: "",
+        category: CATEGORIES[0],
+        status: STATUSES[0],
+        contactMethod: CONTACT_METHODS[0],
+        score: 0,
+        website: "",
+        blacklisted: false,
+      };
 }
 
 export function ProviderForm({
@@ -64,32 +78,41 @@ export function ProviderForm({
   blacklist: BlacklistEntry[];
   onSave: (values: ProviderFormValues) => Promise<void> | void;
 }) {
-  const [values, setValues] = useState<ProviderFormValues>(emptyValues);
+  // El Modal desmonta a sus hijos al cerrar, así que el cuerpo se remonta cada vez que
+  // se abre; la `key` lo reinicia también al cambiar de proveedor con el form ya abierto.
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={initial ? "Editar proveedor" : "Nuevo proveedor"}
+    >
+      <ProviderFormBody
+        key={initial?.id ?? "new"}
+        initial={initial}
+        blacklist={blacklist}
+        onClose={onClose}
+        onSave={onSave}
+      />
+    </Modal>
+  );
+}
+
+function ProviderFormBody({
+  initial,
+  blacklist,
+  onClose,
+  onSave,
+}: {
+  initial?: Provider;
+  blacklist: BlacklistEntry[];
+  onClose: () => void;
+  onSave: (values: ProviderFormValues) => Promise<void> | void;
+}) {
+  const [values, setValues] = useState<ProviderFormValues>(() =>
+    initialValues(initial),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // Sincronizar el form al abrir / cambiar el proveedor en edición.
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    setValues(
-      initial
-        ? {
-            company: initial.company,
-            contact: initial.contact,
-            email: initial.email,
-            phone: initial.phone,
-            address: initial.address,
-            category: initial.category,
-            status: initial.status,
-            contactMethod: initial.contactMethod,
-            score: initial.score,
-            website: initial.website,
-            blacklisted: initial.blacklisted,
-          }
-        : emptyValues(),
-    );
-  }, [open, initial]);
 
   const blacklistHit =
     values.company.trim().length > 0 && isBlacklisted(values.company, blacklist);
@@ -127,12 +150,7 @@ export function ProviderForm({
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={initial ? "Editar proveedor" : "Nuevo proveedor"}
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className={labelCls} htmlFor="company">
             Empresa
@@ -320,6 +338,5 @@ export function ProviderForm({
           </button>
         </div>
       </form>
-    </Modal>
   );
 }

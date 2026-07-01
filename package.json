@@ -12,7 +12,6 @@
     "import-expo": "tsx scripts/import-expo.ts",
     "import-providers": "tsx scripts/import-providers.ts",
     "import-transactions": "tsx scripts/import-transactions.ts",
-    "import-amazon-transactions": "tsx scripts/import-amazon-transactions.ts",
     "import-stock": "tsx scripts/import-stock.ts",
     "migrate-remove-monthly-amazon": "tsx scripts/migrate-remove-monthly-amazon.ts"
   },

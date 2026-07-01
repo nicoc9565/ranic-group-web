@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { todayISO } from "@/lib/format";
 import {
   EXPENSE_CATEGORIES,
@@ -38,17 +38,28 @@ const inputCls =
 const labelCls =
   "mb-1 block font-eyebrow text-[11px] uppercase tracking-[0.15em] text-ink-soft";
 
-function emptyValues(): TransactionFormValues {
-  return {
-    date: todayISO(),
-    type: "Egreso",
-    description: "",
-    amount: 0,
-    payer: "",
-    method: "",
-    incomeSource: null,
-    expenseCategory: EXPENSE_CATEGORIES[0],
-  };
+function initialValues(initial?: Transaction): TransactionFormValues {
+  return initial
+    ? {
+        date: initial.date,
+        type: initial.type,
+        description: initial.description,
+        amount: initial.amount,
+        payer: initial.payer,
+        method: initial.method,
+        incomeSource: initial.incomeSource,
+        expenseCategory: initial.expenseCategory,
+      }
+    : {
+        date: todayISO(),
+        type: "Egreso",
+        description: "",
+        amount: 0,
+        payer: "",
+        method: "",
+        incomeSource: null,
+        expenseCategory: EXPENSE_CATEGORIES[0],
+      };
 }
 
 /** ¿El valor cae fuera de la lista fija (y no es vacío)? → modo "Otro…". */
@@ -69,33 +80,48 @@ export function TransactionForm({
   onSave: (values: TransactionFormValues) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
 }) {
-  const [values, setValues] = useState<TransactionFormValues>(emptyValues);
-  const [payerOther, setPayerOther] = useState(false);
-  const [methodOther, setMethodOther] = useState(false);
+  // El Modal desmonta a sus hijos al cerrar, así que el cuerpo se remonta cada vez que
+  // se abre; la `key` lo reinicia también al cambiar de movimiento con el form ya abierto.
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={initial ? "Editar movimiento" : "Nuevo movimiento"}
+    >
+      <TransactionFormBody
+        key={initial?.id ?? "new"}
+        initial={initial}
+        onClose={onClose}
+        onSave={onSave}
+        onDelete={onDelete}
+      />
+    </Modal>
+  );
+}
+
+function TransactionFormBody({
+  initial,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  initial?: Transaction;
+  onClose: () => void;
+  onSave: (values: TransactionFormValues) => Promise<void> | void;
+  onDelete?: () => Promise<void> | void;
+}) {
+  const [values, setValues] = useState<TransactionFormValues>(() =>
+    initialValues(initial),
+  );
+  const [payerOther, setPayerOther] = useState(() =>
+    isCustom(initialValues(initial).payer, FIXED_PAYERS),
+  );
+  const [methodOther, setMethodOther] = useState(() =>
+    isCustom(initialValues(initial).method, FIXED_METHODS),
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setError(null);
-    setConfirmDelete(false);
-    const next = initial
-      ? {
-          date: initial.date,
-          type: initial.type,
-          description: initial.description,
-          amount: initial.amount,
-          payer: initial.payer,
-          method: initial.method,
-          incomeSource: initial.incomeSource,
-          expenseCategory: initial.expenseCategory,
-        }
-      : emptyValues();
-    setValues(next);
-    setPayerOther(isCustom(next.payer, FIXED_PAYERS));
-    setMethodOther(isCustom(next.method, FIXED_METHODS));
-  }, [open, initial]);
 
   function set<K extends keyof TransactionFormValues>(
     key: K,
@@ -137,12 +163,7 @@ export function TransactionForm({
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={initial ? "Editar movimiento" : "Nuevo movimiento"}
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className={labelCls} htmlFor="date">
@@ -372,6 +393,5 @@ export function TransactionForm({
           </div>
         </div>
       </form>
-    </Modal>
   );
 }
