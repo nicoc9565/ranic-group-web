@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ImportDialog } from "@/components/ImportDialog";
 import { MetricCard } from "@/components/MetricCard";
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -8,6 +9,12 @@ import {
   type TransactionFormValues,
 } from "@/components/TransactionForm";
 import { TransactionTable } from "@/components/TransactionTable";
+import { formatDate, formatShort } from "@/lib/format";
+import { importSettlement, settlementExists } from "@/lib/importWrite";
+import {
+  parseSettlement,
+  type SettlementParseResult,
+} from "@/lib/parseSettlement";
 import {
   addTransaction,
   deleteTransaction,
@@ -25,6 +32,7 @@ export default function FinanzasPage() {
   const [loaded, setLoaded] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(
     () =>
@@ -114,13 +122,22 @@ export default function FinanzasPage() {
         eyebrow="Finanzas"
         title="Flujo de caja"
         actions={
-          <button
-            type="button"
-            onClick={openNew}
-            className="rounded-control bg-olive px-3 py-2 text-sm font-medium text-stone transition-colors hover:bg-olive-deep"
-          >
-            Nuevo movimiento
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setImportOpen(true)}
+              className="rounded-control border border-olive px-3 py-2 text-sm font-medium text-olive transition-colors hover:bg-olive hover:text-stone"
+            >
+              Subir informe
+            </button>
+            <button
+              type="button"
+              onClick={openNew}
+              className="rounded-control bg-olive px-3 py-2 text-sm font-medium text-stone transition-colors hover:bg-olive-deep"
+            >
+              Nuevo movimiento
+            </button>
+          </div>
         }
       />
 
@@ -204,6 +221,47 @@ export default function FinanzasPage() {
           editId ? async () => void (await deleteTransaction(editId)) : undefined
         }
       />
+
+      <ImportDialog<SettlementParseResult>
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Subir informe de liquidación (Amazon)"
+        accept=".txt"
+        parse={parseSettlement}
+        renderPreview={(r) => <SettlementPreview r={r} />}
+        canConfirm={(r) => r.reconciles}
+        checkDuplicate={(r) => settlementExists(r.settlementId)}
+        onConfirm={(r, replace) => importSettlement(r, replace)}
+      />
     </>
+  );
+}
+
+function SettlementPreview({ r }: { r: SettlementParseResult }) {
+  const neto = Math.round((r.ventas - r.gastos) * 100) / 100;
+  return (
+    <div className="space-y-1">
+      <p className="font-medium text-ink">
+        Liquidación {formatShort(r.periodStart)}–{formatDate(r.periodEnd)} · depósito{" "}
+        {formatDate(r.depositDate)}
+      </p>
+      <div className="flex justify-between">
+        <span className="text-ink-soft">Ventas Amazon</span>
+        <span className="font-mono text-status-ontrack">+${r.ventas.toFixed(2)}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-ink-soft">Gastos Amazon</span>
+        <span className="font-mono text-status-overdue">−${r.gastos.toFixed(2)}</span>
+      </div>
+      <div className="flex justify-between border-t border-line pt-1 font-medium text-ink">
+        <span>Neto</span>
+        <span className="font-mono">
+          ${neto.toFixed(2)} {r.reconciles ? "✓" : "⚠"}
+        </span>
+      </div>
+      <p className="text-ink-soft">
+        {r.skuSales.length} productos · liquidación {r.settlementId}
+      </p>
+    </div>
   );
 }
