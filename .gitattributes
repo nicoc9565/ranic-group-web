@@ -1,0 +1,3 @@
+# Fixture de test del informe de liquidación de Amazon: preservar bytes exactos
+# (tabs y line-endings) — no aplicar normalización de EOL de git.
+lib/__tests__/fixtures/settlement-sample.txt -text
