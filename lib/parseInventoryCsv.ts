@@ -20,12 +20,15 @@ function numOrNull(value: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Parsea el CSV de "Inventario de Logística de Amazon" a filas de stock. */
+/** Parsea el informe de "Inventario de Logística de Amazon" (CSV o TXT tab-separado) a filas de stock. */
 export function parseInventoryCsv(text: string): ParsedStockItem[] {
+  const firstLine = text.slice(0, text.indexOf("\n"));
+  const delimiter = firstLine.includes("\t") ? "\t" : ",";
   const rows: CsvRow[] = parse(text, {
     columns: true,
     skip_empty_lines: true,
     bom: true,
+    delimiter,
   });
 
   return rows.map((row) => ({
