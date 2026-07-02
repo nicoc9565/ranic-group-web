@@ -34,7 +34,7 @@ export function HowWeWork() {
               <span className="font-mono text-xs text-ink-soft">
                 {step.number}
               </span>
-              <h3 className="mt-2 font-display text-lg font-semibold text-ink">
+              <h3 className="mt-2 font-league text-lg font-bold tracking-tight text-ink">
                 {step.title}
               </h3>
               <p className="mt-1 text-sm text-ink-soft">{step.description}</p>

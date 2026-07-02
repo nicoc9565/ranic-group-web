@@ -41,7 +41,7 @@ export function WhyUs() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full border border-kraft bg-kraft/40 font-display text-sm font-bold text-olive-deep">
                 {reason.glyph}
               </span>
-              <h3 className="mt-4 font-display text-lg font-semibold text-ink">
+              <h3 className="mt-4 font-league text-lg font-bold tracking-tight text-ink">
                 {reason.title}
               </h3>
               <p className="mt-1 text-sm text-ink-soft">{reason.description}</p>

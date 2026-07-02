@@ -37,7 +37,7 @@ export function CategoriesSection() {
               <p className="mb-2 font-mono text-xs text-ink-soft">
                 {category.code}
               </p>
-              <h3 className="font-display text-lg font-semibold text-ink">
+              <h3 className="font-league text-lg font-bold tracking-tight text-ink">
                 {category.name}
               </h3>
               <p className="mt-1 text-sm text-ink-soft">{category.description}</p>

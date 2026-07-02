@@ -5,7 +5,7 @@ export function MapBrandProtection() {
         <p className="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-stone/70">
           MAP &amp; brand protection
         </p>
-        <p className="font-display text-2xl font-semibold leading-snug text-stone sm:text-3xl">
+        <p className="font-league text-2xl font-bold tracking-tight leading-snug text-stone sm:text-3xl">
           We respect MAP, protect listing quality, and never race to the bottom
           on price. If you want a wholesale partner that plays by the rules,
           that&apos;s us.
