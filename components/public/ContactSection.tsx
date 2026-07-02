@@ -48,7 +48,7 @@ export function ContactSection() {
         <p className="mb-2 font-sans text-sm font-semibold uppercase tracking-wide text-ink-soft">
           Get in touch
         </p>
-        <h2 className="font-display text-3xl font-bold text-ink">
+        <h2 className="font-league text-3xl font-extrabold tracking-tight text-ink">
           Sell your brand to RANIC
         </h2>
         <p className="mt-3 text-ink-soft">
@@ -60,6 +60,9 @@ export function ContactSection() {
             Write to us directly
           </a>
           .
+        </p>
+        <p className="mt-3 font-mono text-xs uppercase tracking-[0.15em] text-ink-soft">
+          nicolas.conti@ranicgroup.com · +1 (201) 572-1383 · Summit, NJ
         </p>
 
         <form
