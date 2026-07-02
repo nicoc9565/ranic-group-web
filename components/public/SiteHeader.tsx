@@ -15,7 +15,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-stone/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-line bg-cream/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
         <Link href="/" aria-label="RANIC GROUP LLC — home">
           <Logo variant="light" />
@@ -33,7 +33,7 @@ export function SiteHeader() {
           ))}
           <a
             href="#contact"
-            className="rounded-control bg-olive px-4 py-2 text-sm font-semibold text-stone transition-colors hover:bg-olive-deep"
+            className="rounded-full bg-gold px-5 py-2 text-sm font-semibold text-[#2C3A12] transition-colors hover:bg-[#B8965A]"
           >
             Work with us
           </a>
@@ -79,7 +79,7 @@ export function SiteHeader() {
           <a
             href="#contact"
             onClick={() => setOpen(false)}
-            className="mt-2 rounded-control bg-olive px-4 py-2 text-center text-sm font-semibold text-stone transition-colors hover:bg-olive-deep"
+            className="mt-2 rounded-full bg-gold px-5 py-2 text-center text-sm font-semibold text-[#2C3A12] transition-colors hover:bg-[#B8965A]"
           >
             Work with us
           </a>

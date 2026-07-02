@@ -12,7 +12,7 @@ export default function TermsPage() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1 px-6 py-16">
+      <main className="flex-1 bg-cream px-6 py-16">
         <div className="mx-auto max-w-3xl">
           <h1 className="font-league text-3xl font-extrabold tracking-tight text-ink">
             Terms of Use

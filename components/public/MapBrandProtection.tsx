@@ -1,14 +1,17 @@
 export function MapBrandProtection() {
   return (
-    <section className="bg-olive-deep px-6 py-16">
-      <div className="mx-auto max-w-3xl text-center">
-        <p className="mb-3 font-sans text-sm font-semibold uppercase tracking-wide text-stone/70">
+    <section className="relative overflow-hidden bg-gradient-to-br from-olive-deep to-forest px-6 py-20">
+      <div className="relative z-10 mx-auto max-w-3xl text-center">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-gold">
           MAP &amp; brand protection
         </p>
-        <p className="font-league text-2xl font-bold tracking-tight leading-snug text-stone sm:text-3xl">
-          We respect MAP, protect listing quality, and never race to the bottom
-          on price. If you want a wholesale partner that plays by the rules,
-          that&apos;s us.
+        <h2 className="font-league text-3xl font-extrabold tracking-tight text-cream sm:text-4xl">
+          Your pricing is an asset. We treat it like one.
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-cream/80">
+          Holding MAP, protecting listing quality, and refusing the race to the
+          bottom — wider distribution with the discipline your brand depends
+          on.
         </p>
       </div>
     </section>

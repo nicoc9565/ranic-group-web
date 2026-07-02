@@ -21,6 +21,11 @@ const config: Config = {
         surface: "#FFFFFF", // cards y tablas
         kraft: "#D9CBA3", // fondo/borde de la tarjeta "Purchase Order" (sitio público)
         stamp: "#B23A2E", // sello "APROBADO" (sitio público)
+        // Paleta v4 del sitio público (orgánico premium)
+        forest: "#26330F", // fin del degradé, fondos oscuros profundos
+        sage: "#8CA06A", // hojas claras, detalles sobre oscuro
+        gold: "#C7A662", // CTA principal, acentos cálidos
+        cream: "#F5F1E6", // fondo claro cálido del sitio público
         ink: {
           DEFAULT: "#1C1B17", // texto principal (negro cálido)
           soft: "#6B6A60", // texto secundario / labels / muted
