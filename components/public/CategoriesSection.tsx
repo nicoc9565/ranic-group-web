@@ -23,7 +23,7 @@ const CATEGORIES = [
 
 export function CategoriesSection() {
   return (
-    <section className="px-6 py-16">
+    <section id="categories" className="scroll-mt-20 px-6 py-16">
       <div className="mx-auto max-w-5xl">
         <p className="mb-8 font-sans text-sm font-semibold uppercase tracking-wide text-ink-soft">
           Categories we buy
@@ -37,7 +37,7 @@ export function CategoriesSection() {
               <p className="mb-2 font-mono text-xs text-ink-soft">
                 {category.code}
               </p>
-              <h3 className="font-display text-lg font-semibold text-ink">
+              <h3 className="font-league text-lg font-bold tracking-tight text-ink">
                 {category.name}
               </h3>
               <p className="mt-1 text-sm text-ink-soft">{category.description}</p>

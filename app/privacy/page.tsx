@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/public/SiteFooter";
+import { SiteHeader } from "@/components/public/SiteHeader";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -11,16 +12,17 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <>
+      <SiteHeader />
       <main className="flex-1 px-6 py-16">
         <div className="mx-auto max-w-3xl">
-          <h1 className="font-display text-3xl font-bold text-ink">
+          <h1 className="font-league text-3xl font-extrabold tracking-tight text-ink">
             Privacy Policy
           </h1>
           <p className="mt-2 text-sm text-ink-soft">Last updated: June 2026.</p>
 
           <div className="mt-10 space-y-8 text-sm leading-relaxed text-ink">
             <section>
-              <h2 className="font-display text-lg font-semibold text-ink">
+              <h2 className="font-league text-lg font-bold tracking-tight text-ink">
                 Information we collect
               </h2>
               <p className="mt-2">
@@ -37,7 +39,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="font-display text-lg font-semibold text-ink">
+              <h2 className="font-league text-lg font-bold tracking-tight text-ink">
                 How we use this information
               </h2>
               <p className="mt-2">
@@ -49,7 +51,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="font-display text-lg font-semibold text-ink">
+              <h2 className="font-league text-lg font-bold tracking-tight text-ink">
                 Cookies
               </h2>
               <p className="mt-2">
@@ -58,7 +60,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="font-display text-lg font-semibold text-ink">
+              <h2 className="font-league text-lg font-bold tracking-tight text-ink">
                 Third-party links
               </h2>
               <p className="mt-2">
@@ -69,7 +71,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="font-display text-lg font-semibold text-ink">
+              <h2 className="font-league text-lg font-bold tracking-tight text-ink">
                 Changes to this policy
               </h2>
               <p className="mt-2">
@@ -79,7 +81,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="font-display text-lg font-semibold text-ink">
+              <h2 className="font-league text-lg font-bold tracking-tight text-ink">
                 Contact
               </h2>
               <p className="mt-2">

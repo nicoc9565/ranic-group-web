@@ -1,10 +1,13 @@
+import { AboutUs } from "@/components/public/AboutUs";
 import { CategoriesSection } from "@/components/public/CategoriesSection";
 import { ContactSection } from "@/components/public/ContactSection";
+import { CredentialsBar } from "@/components/public/CredentialsBar";
 import { Faq } from "@/components/public/Faq";
 import { Hero } from "@/components/public/Hero";
 import { HowWeWork } from "@/components/public/HowWeWork";
 import { MapBrandProtection } from "@/components/public/MapBrandProtection";
 import { SiteFooter } from "@/components/public/SiteFooter";
+import { SiteHeader } from "@/components/public/SiteHeader";
 import { WhyUs } from "@/components/public/WhyUs";
 
 export const metadata = {
@@ -25,8 +28,11 @@ export const metadata = {
 export default function Home() {
   return (
     <>
+      <SiteHeader />
       <main className="flex-1">
         <Hero />
+        <CredentialsBar />
+        <AboutUs />
         <WhyUs />
         <HowWeWork />
         <CategoriesSection />

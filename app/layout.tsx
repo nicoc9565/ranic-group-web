@@ -3,6 +3,7 @@ import {
   Archivo,
   Inter,
   JetBrains_Mono,
+  League_Spartan,
   Space_Grotesk,
 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
@@ -14,6 +15,13 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+});
+
+// Display del sitio público — la fuente del logo (marca hablando con sus letras).
+const leagueSpartan = League_Spartan({
+  variable: "--font-league-spartan",
+  subsets: ["latin"],
+  weight: ["500", "700", "800"],
 });
 
 // Body / UI / tablas.
@@ -54,7 +62,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${archivo.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${archivo.variable} ${leagueSpartan.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-stone font-sans text-ink">
         {children}
