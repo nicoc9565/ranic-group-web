@@ -23,7 +23,7 @@ const CATEGORIES = [
 
 export function CategoriesSection() {
   return (
-    <section className="px-6 py-16">
+    <section id="categories" className="scroll-mt-20 px-6 py-16">
       <div className="mx-auto max-w-5xl">
         <p className="mb-8 font-sans text-sm font-semibold uppercase tracking-wide text-ink-soft">
           Categories we buy
