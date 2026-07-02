@@ -29,7 +29,7 @@ export default function Home() {
   return (
     <>
       <SiteHeader />
-      <main className="flex-1">
+      <main className="flex-1 bg-cream">
         <Hero />
         <CredentialsBar />
         <AboutUs />
