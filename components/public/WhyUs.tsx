@@ -1,50 +1,60 @@
+import { LeafIcon } from "./Foliage";
+
 const REASONS = [
   {
-    glyph: "M",
     title: "MAP discipline",
     description:
-      "We price under MAP-first guardrails and stay out of the price wars that erode your brand's value across channels.",
+      "We price under MAP-first guardrails and hold it. No race to the bottom, no channel chaos.",
+    chip: "bg-[#EAF0DE]",
+    leaf: "#556B2F",
   },
   {
-    glyph: "S",
-    title: "Transparent sourcing",
+    title: "Documented sourcing",
     description:
-      "Documented procurement and clear wholesale terms on every order — no gray-market guesswork about where your product went.",
+      "Clear wholesale terms on every order. No gray-market guesswork about where your product went.",
+    chip: "bg-[#F3E9D2]",
+    leaf: "#C7A662",
   },
   {
-    glyph: "L",
     title: "Long-term focus",
     description:
-      "We buy for sustained, repeatable sell-through and recurring monthly orders — not one-off arbitrage flips.",
+      "We buy for steady, repeatable sell-through and recurring orders — not one-off flips.",
+    chip: "bg-[#EAF0DE]",
+    leaf: "#556B2F",
   },
   {
-    glyph: "U",
     title: "U.S. operations",
     description:
-      "Based in Summit, NJ, as a registered U.S. LLC, with direct and responsive communication.",
+      "A registered U.S. LLC in Summit, NJ, with direct and responsive communication.",
+    chip: "bg-[#F3E9D2]",
+    leaf: "#C7A662",
   },
 ] as const;
 
 export function WhyUs() {
   return (
-    <section className="px-6 py-16">
+    <section className="bg-cream px-6 py-20">
       <div className="mx-auto max-w-5xl">
-        <p className="mb-8 font-sans text-sm font-semibold uppercase tracking-wide text-ink-soft">
-          Why brands work with us
+        <p className="mb-8 text-xs font-semibold uppercase tracking-[0.22em] text-olive">
+          Why brands choose us
         </p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2">
           {REASONS.map((reason) => (
             <div
               key={reason.title}
-              className="rounded-card border border-line bg-surface p-5"
+              className="rounded-2xl bg-surface p-6 shadow-[0_10px_26px_rgba(38,51,15,0.09)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(38,51,15,0.14)]"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-kraft bg-kraft/40 font-display text-sm font-bold text-olive-deep">
-                {reason.glyph}
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-xl ${reason.chip}`}
+              >
+                <LeafIcon className="h-6 w-3" fill={reason.leaf} />
               </span>
-              <h3 className="mt-4 font-league text-lg font-bold tracking-tight text-ink">
+              <h3 className="mt-4 font-league text-xl font-bold tracking-tight text-ink">
                 {reason.title}
               </h3>
-              <p className="mt-1 text-sm text-ink-soft">{reason.description}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                {reason.description}
+              </p>
             </div>
           ))}
         </div>
