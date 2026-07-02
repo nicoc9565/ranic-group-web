@@ -42,6 +42,8 @@ const config: Config = {
         mono: ["var(--font-jetbrains-mono)", "ui-monospace", "monospace"],
         // Eyebrows / labels de sección (uppercase, tracking ancho)
         eyebrow: ["var(--font-archivo)", "var(--font-inter)", "sans-serif"],
+        // Display del sitio público (League Spartan, la fuente del logo)
+        league: ["var(--font-league-spartan)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         card: "6px",
