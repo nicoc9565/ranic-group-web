@@ -1,124 +1,99 @@
-# RANIC GROUP — Guía de diseño visual (sitio público) — v3
+# RANIC GROUP — Guía de diseño visual (sitio público) — v4 "orgánico premium"
 
 Dirección para implementar `/`, `/privacy` y `/terms`. **No modifica**
 `docs/design-guidelines.md` (esa sigue siendo la guía del CRM en `/admin`, intacta).
 
-> **v3 (rediseño con más presencia).** Cambios clave respecto de v1/v2: fuente display
-> **League Spartan** (la del logo) en lugar de Space Grotesk; **logo recreado en código**;
-> **header fijo**; nuevas secciones (barra de credenciales, About Us); FAQ ampliado; footer
-> completo sobre `olive-deep`. El idioma del sitio es **inglés** (empresa y audiencia de EE.UU.)
-> y el CTA principal hace **scroll al formulario de contacto** (`#contact`), no `mailto:`.
+> **v4 (re-piel orgánica premium).** Reemplaza la estética "documento/kraft" de v2–v3:
+> se elimina la tarjeta Purchase Order, el sello APROBADO y el motivo kraft-documento.
+> La firma visual pasa a ser el **follaje SVG ilustrado** desbordando esquinas, sobre un
+> sistema de degradé oliva profundo, fondos cream cálidos, paneles flotantes y CTA pill
+> dorado. Sin fotografía ni imágenes raster: toda la materia visual es código (SVG).
 
 ## Concepto
 
-El objeto central del mundo de un proveedor wholesale es la **orden de compra**: el documento
-que confirma que alguien va a comprarle, en qué términos, y si fue aprobado. El hero de esta
-página usa ese objeto literalmente — una tarjeta con la forma de una purchase order, con un
-sello "APROBADO" que se asienta al cargar — en vez de un stat-card genérico. Es la pieza
-memorable de la página. El lenguaje de "documento oficial verificado" se extiende con disciplina
-a la **barra de credenciales** (hechos duros presentados como datos validados).
+Naturaleza disciplinada: lo orgánico (hojas, verdes profundos, dorado cálido) transmite
+crecimiento y cuidado; la ejecución (grillas limpias, paneles con sombra suave, tipografía
+apretada) transmite seriedad operativa. La audiencia sigue siendo un brand manager que
+verifica que RANIC es real y seria antes de responder un outreach.
 
 ## Paleta (tokens Tailwind — extienden, no reemplazan, los del CRM)
 
-| Token | Hex | Uso | Origen |
-|---|---|---|---|
-| `olive` | `#556B2F` | CTA primario, acentos, links | Heredado del CRM |
-| `olive-deep` | `#3E4F1D` | Footer, wordmark del logo (header), texto fuerte | Heredado del CRM |
-| `stone` | `#F3F4EF` | Fondo general, fondo del header | Heredado del CRM |
-| `ink` | `#1C1B17` | Texto principal | Heredado del CRM |
-| `ink-soft` | `#6B6A60` | Texto secundario | Heredado del CRM |
-| `kraft` | `#D9CBA3` | Tarjeta "Purchase Order"; fondo tenue de la barra de credenciales (`kraft/20`) | **Nuevo**, de este sitio |
-| `stamp` | `#B23A2E` | **Solo** el sello "APROBADO" — en ningún otro lado | **Nuevo** (mismo rojo que `status-overdue` del CRM — refuerzo intencional de marca) |
+| Token | Hex | Rol |
+|---|---|---|
+| `olive` | `#556B2F` | Acentos sobre claro, eyebrows, chips, paso numerado |
+| `olive-deep` | `#3E4F1D` | Inicio del degradé firma, wordmark del logo (header) |
+| `forest` | `#26330F` | **Nuevo.** Fin del degradé, fondos oscuros profundos |
+| `sage` | `#8CA06A` | **Nuevo.** Hojas claras, detalles/credencial sobre oscuro |
+| `gold` | `#C7A662` | **Nuevo.** CTA principal, eyebrows sobre oscuro, acentos cálidos |
+| `cream` | `#F5F1E6` | **Nuevo.** Fondo claro cálido del sitio público (reemplaza a `stone` acá) |
+| `kraft` | `#D9CBA3` | Legado; ya no protagoniza (sin motivo documento) |
+| `ink` / `ink-soft` / `line` / `surface` | — | Texto, hairlines y paneles blancos (heredados) |
 
-Crema del logo en fondo oscuro: `#F1EBDA` (hex directo, no token). No usar `olive-tint` ni los
-tokens de semáforo del CRM (`status-today`, `status-ontrack`).
+- **Degradé firma:** `bg-gradient-to-br from-olive-deep to-forest` (hero, banda MAP, footer).
+- **`stamp` no se usa** en el sitio público (el error del form usa `status-overdue`).
+- Texto del CTA dorado: `#2C3A12` (hex directo). Hover del pill del header: `#B8965A`.
+- Chips de tarjeta: `#EAF0DE` (verde tenue) y `#F3E9D2` (dorado tenue), hex directos.
 
 ## Tipografía
 
-Vía `next/font` (ya configuradas en el proyecto):
+- **Display / titulares: League Spartan** (`font-league`, extrabold, `tracking-tight`) — la
+  fuente del logo. Titulares grandes con `leading` ~0.98 en el hero.
+- **Body: Inter** (`font-sans`). Eyebrows: Inter semibold uppercase `tracking-[0.22em]`,
+  `text-gold` sobre oscuro y `text-olive` sobre claro.
+- **Mono: JetBrains Mono** (`font-mono`) — líneas de credencial/datos y chips de categoría.
+- Space Grotesk (`font-display`) es del CRM; no se usa en el sitio público.
 
-- **Display / titulares: `League Spartan`** (`font-league`, pesos 500/700/800) — la fuente del
-  logo: la marca "habla" con sus propias letras. Titulares del hero, secciones, About, contacto,
-  páginas legales y logo. Interletrado apretado (`tracking-tight`, ~`-0.03em` a `-0.055em` en
-  tamaños grandes). **Reemplaza a Space Grotesk en el sitio público.** Space Grotesk
-  (`font-display`) sigue siendo del CRM — no se toca esa guía.
-- **Body: `Inter`** (`font-sans`) — párrafos, nav, botones.
-- **Mono: `JetBrains Mono`** (`font-mono`) — datos de la PO en el hero, líneas de credencial,
-  códigos de categoría, datos de contacto y línea del footer. No usar mono para texto largo.
+## Firma visual — follaje SVG (`components/public/Foliage.tsx`)
 
-No usar `Archivo` (eyebrows del CRM).
+Hojas sólidas con nervaduras, en capas de tonos oliva/sage/gold, **siempre desbordando una
+esquina** (el contenedor lleva `overflow-hidden`); nunca en medallón/círculo ni centradas como
+ilustración. Tres exports:
 
-## Logo (recreado en código) — `components/public/Logo.tsx`
+- `Foliage` — arreglo grande (~7 hojas) para el hero (esquina superior derecha).
+- `FoliageAccent` — 2 hojas tenues para banda MAP (inferior izquierda) y footer (superior derecha).
+- `LeafIcon` — hoja individual para los chips de las tarjetas de Why Us.
 
-Wordmark **"ranic group."** + "LLC" en League Spartan, peso 800, `tracking-[-0.055em]`, sin
-bajada. Componente de texto estilado (no imagen): nítido, transparente, recoloreable, liviano.
+Todo `aria-hidden` (decorativo). La Purchase Order y su animación de sello quedaron eliminadas
+(keyframes `po-card-in`/`stamp-in` removidos de `globals.css`).
 
-- **`variant="light"` (fondo claro, header):** wordmark `#3E4F1D` (`olive-deep`); el punto "." y
-  "LLC" en `#556B2F` (`olive`).
-- **`variant="dark"` (fondo oscuro `olive-deep`, footer):** todo en crema `#F1EBDA`.
+## Componentes del sistema
 
-## Estructura de la Home (orden de secciones)
+- **Paneles flotantes:** `bg-surface rounded-2xl shadow-[0_10px_26px_rgba(38,51,15,0.09)]`;
+  hover `hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(38,51,15,0.14)] transition
+  duration-200` (credenciales, Why Us, categorías, form de contacto).
+- **CTA principal:** pill `rounded-full bg-gold text-[#2C3A12] font-semibold` con sombra suave
+  y micro-lift al hover (hero, header, submit del form).
+- **Tarjetas suaves sobre blanco:** `bg-cream rounded-2xl` sin sombra (pasos de How We Work,
+  filas del FAQ).
+- **Chips:** código de categoría en pill `bg-olive/10 text-olive font-mono`; ícono de hoja en
+  cuadrado redondeado `rounded-xl` con fondo tenue.
 
-Header fijo + one-pager. Componentes en `components/public/`, ensamblados en `app/page.tsx`:
+## Estructura de la Home
 
-1. **Header (`SiteHeader.tsx`)** — sticky, fondo `stone/95` con `backdrop-blur` y borde inferior
-   `line`. Izquierda: `<Logo variant="light">`. Desktop: nav de anclas **About · How we work ·
-   Categories · FAQ** + botón **"Work with us"** (`olive`, → `#contact`). Mobile: logo + botón
-   hamburguesa que despliega el nav.
-2. **Hero (`Hero.tsx`)** — 50/50 en desktop (tarjeta debajo en mobile). Izquierda: titular grande
-   en League Spartan, subhead en Inter, CTA `olive` "Work with us" (→ `#contact`) y línea de
-   credencial en mono `Registered U.S. LLC · Summit, NJ`. Derecha: `<PurchaseOrderCard>`.
-3. **Barra de credenciales (`CredentialsBar.tsx`)** — banda `kraft/20` con borde, 4 hechos duros
-   (label mono + dato en League Spartan). 4 columnas en desktop, 2x2 en mobile. Sin números de
-   catálogo ni año.
-4. **About Us (`AboutUs.tsx`)** — ancla `#about`. "Who we are" + 1–2 párrafos con sustancia.
-5. **Why brands work with us (`WhyUs.tsx`)** — 4 tarjetas (MAP discipline, Transparent sourcing,
-   Long-term focus, U.S. operations), glyph en círculo kraft, copy desarrollado.
-6. **How we work (`HowWeWork.tsx`)** — ancla `#how-we-work`. 4 pasos **numerados** `01→04` (el
-   orden encierra información — proceso real).
-7. **Categories we buy (`CategoriesSection.tsx`)** — ancla `#categories`. Grilla 2x2 con código
-   mono por categoría (BPC, H&P, E&T, GM).
-8. **MAP & brand protection (`MapBrandProtection.tsx`)** — señal de confianza para marcas.
-9. **FAQ (`Faq.tsx`)** — ancla `#faq`. Preguntas de legitimidad (registro, MAP, marketplaces,
-   compra directa, cómo empezar).
-10. **Contact (`ContactSection.tsx`)** — ancla `#contact`. **El formulario de contacto ya existe
-    y se conserva tal cual** (campos Company/Brand, Contact Name, Email, Category, Message → POST
-    a `/api/contact` vía Resend). No se toca su lógica ni el endpoint. Solo se refresca lo visual:
-    título en League Spartan y una línea de datos reales
-    (`nicolas.conti@ranicgroup.com · +1 (201) 572-1383 · Summit, NJ`). El `mailto:` de "Write to
-    us directly" se conserva como alternativa secundaria.
-11. **Footer (`SiteFooter.tsx`)** — fondo `olive-deep`. `<Logo variant="dark">` (crema), links
-    **About · Privacy · Terms**, y línea final en mono `RANIC GROUP LLC · Summit, NJ · … · © 2026`.
+Header sticky `bg-cream/95 backdrop-blur` (logo + nav de anclas + pill dorado) y luego:
+Hero (degradé + follaje + credencial en sage) → CredentialsBar (panel flotante 4 hechos) →
+About (`#about`, blanco) → Why Us (cream, 4 paneles con hoja) → How we work (`#how-we-work`,
+blanco, pasos 01→04, el 04 en gold) → Categories (`#categories`, cream, paneles con chip) →
+banda MAP (degradé + FoliageAccent) → FAQ (`#faq`, blanco, filas cream) → Contact (`#contact`,
+cream, panel blanco con el **form real intacto** → `/api/contact` vía Resend) → Footer
+(degradé + FoliageAccent + logo crema + links About/Privacy/Terms).
 
-Las anclas usan `scroll-mt-20` para que el header fijo no tape los títulos al saltar.
+Anclas con `scroll-mt-20`. `main` de la Home con `bg-cream`.
 
 ### Páginas `/privacy` y `/terms`
 
-Mismo `SiteHeader` + `SiteFooter` que la home (sin hero ni secciones). Títulos en League Spartan
-(`font-league`), cuerpo en Inter. **El texto legal no se reescribe** — solo el marco visual
-(header + fuente de títulos). Sin tarjeta PO ni sello (son páginas de lectura, no de conversión).
+Mismo header/footer; `main` con `bg-cream`; títulos en League Spartan. Texto legal intacto.
 
-## Signature element — "Purchase Order" + sello
+## Motion
 
-Tarjeta con fondo `kraft`, borde fino, esquinas levemente redondeadas. Contenido en JetBrains
-Mono (`BUYER:`, `TERMS: NET 30`, `STATUS: [ APROBADO ]`). El sello es un elemento rotado ~-8°,
-color `stamp`, con "APROBADO" en mayúsculas.
-
-**Animación de carga (única animación orquestada):** la tarjeta aparece primero (fade + slide),
-y 200–300ms después el sello "cae" y asienta con leve overshoot + rotación. Con
-`prefers-reduced-motion: reduce`, el sello aparece directo en su posición final.
-
-## Motion (general)
-
-Fuera de la animación del sello: micro-interacciones sobrias (leve elevación/sombra en tarjetas y
-botones; el header fijo puede ganar una leve sombra al hacer scroll). Nada de scroll-reveal por
-sección ni animación ambiental.
+Sin animación de carga (la del sello se eliminó). Solo micro-interacciones: lift + sombra en
+paneles y CTAs (`transition duration-200`). `prefers-reduced-motion` respetado (bloque global
+en `globals.css`).
 
 ## Quality floor
 
-Responsive completo (header colapsa a menú; hero a columna única; grillas a 1 columna;
-credenciales a 2x2). Foco de teclado visible en nav, CTAs y links. `prefers-reduced-motion`
-respetado (bloque global en `globals.css`). Contraste AA sobre `olive-deep`, `kraft` y `stone`.
-Copy en **inglés**, voz activa, sin relleno. En el sitio público **sí se menciona Amazon**
-abiertamente (distinto de los emails del CRM, que nunca lo mencionan — audiencias y momentos
-distintos).
+Responsive completo (header colapsa a menú; grillas a 1 columna; credenciales 2x2). Foco de
+teclado visible. Contraste AA: `cream` sobre degradé oscuro, `#2C3A12` sobre `gold`, `ink`
+sobre `cream`/`surface`. Copy en **inglés**, voz activa, sin relleno. En el sitio público sí
+se menciona Amazon (distinto de los emails del CRM). El formulario de contacto (Resend) se
+conserva tal cual — su lógica y endpoint no se tocan.
