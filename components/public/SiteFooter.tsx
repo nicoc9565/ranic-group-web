@@ -9,9 +9,9 @@ export function SiteFooter() {
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
         <Logo variant="dark" />
         <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-cream/80">
-          <a href="/#about" className="transition-colors hover:text-cream">
+          <Link href="/#about" className="transition-colors hover:text-cream">
             About
-          </a>
+          </Link>
           <Link href="/privacy" className="transition-colors hover:text-cream">
             Privacy
           </Link>
