@@ -1,9 +1,6 @@
-import { FoliageAccent } from "./Foliage";
-
 export function MapBrandProtection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-olive-deep to-forest px-6 py-20">
-      <FoliageAccent className="pointer-events-none absolute -left-10 -bottom-12 h-44 w-48" />
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-gold">
           MAP &amp; brand protection
