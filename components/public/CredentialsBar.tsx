@@ -1,20 +1,20 @@
 const FACTS = [
   { label: "Registered U.S. LLC", detail: "New Jersey" },
-  { label: "Operating from", detail: "Summit, NJ" },
-  { label: "Selling on", detail: "Amazon and other marketplaces" },
+  { label: "Headquartered", detail: "Summit, NJ" },
+  { label: "Selling on", detail: "Amazon and leading marketplaces" },
   { label: "Purchasing", detail: "MAP-compliant, documented" },
 ] as const;
 
 export function CredentialsBar() {
   return (
-    <section className="border-y border-line bg-kraft/20">
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-4">
+    <section className="bg-cream px-6 py-10">
+      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-4 rounded-2xl bg-surface p-8 shadow-[0_10px_26px_rgba(38,51,15,0.09)] md:grid-cols-4">
         {FACTS.map((fact) => (
           <div key={fact.label}>
-            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-olive">
               {fact.label}
             </p>
-            <p className="mt-1 font-league text-base font-bold tracking-tight text-ink">
+            <p className="mt-1.5 font-league text-base font-bold tracking-tight text-ink">
               {fact.detail}
             </p>
           </div>
