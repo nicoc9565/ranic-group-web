@@ -43,16 +43,17 @@ export function ContactSection() {
   }
 
   return (
-    <section id="contact" className="px-6 py-16">
+    <section id="contact" className="scroll-mt-20 bg-cream px-6 py-20">
       <div className="mx-auto max-w-3xl">
-        <p className="mb-2 font-sans text-sm font-semibold uppercase tracking-wide text-ink-soft">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-olive">
           Get in touch
         </p>
         <h2 className="font-league text-3xl font-extrabold tracking-tight text-ink">
-          Sell your brand to RANIC
+          Let&apos;s talk distribution.
         </h2>
         <p className="mt-3 text-ink-soft">
-          Tell us about your brand and we&apos;ll get back to you. Prefer email?{" "}
+          Tell us about your brand and where you want to grow. We&apos;ll
+          review your catalog and propose terms. Prefer email?{" "}
           <a
             href="mailto:nicolas.conti@ranicgroup.com"
             className="underline hover:text-ink"
@@ -67,7 +68,7 @@ export function ContactSection() {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 grid gap-4 rounded-card border border-kraft bg-kraft/20 p-6 sm:grid-cols-2"
+          className="mt-8 grid gap-4 rounded-2xl bg-surface p-8 shadow-[0_10px_26px_rgba(38,51,15,0.09)] sm:grid-cols-2"
         >
           <div>
             <label
@@ -80,7 +81,7 @@ export function ContactSection() {
               id="company"
               name="company"
               required
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink"
+              className="mt-1 w-full rounded-xl border border-line bg-cream/60 px-3 py-2 text-sm text-ink"
             />
           </div>
           <div>
@@ -94,7 +95,7 @@ export function ContactSection() {
               id="name"
               name="name"
               required
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink"
+              className="mt-1 w-full rounded-xl border border-line bg-cream/60 px-3 py-2 text-sm text-ink"
             />
           </div>
           <div>
@@ -109,7 +110,7 @@ export function ContactSection() {
               name="email"
               type="email"
               required
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink"
+              className="mt-1 w-full rounded-xl border border-line bg-cream/60 px-3 py-2 text-sm text-ink"
             />
           </div>
           <div>
@@ -123,7 +124,7 @@ export function ContactSection() {
               id="category"
               name="category"
               defaultValue={CATEGORIES[0]}
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink"
+              className="mt-1 w-full rounded-xl border border-line bg-cream/60 px-3 py-2 text-sm text-ink"
             >
               {CATEGORIES.map((category) => (
                 <option key={category} value={category}>
@@ -144,14 +145,14 @@ export function ContactSection() {
               name="message"
               required
               rows={4}
-              className="mt-1 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink"
+              className="mt-1 w-full rounded-xl border border-line bg-cream/60 px-3 py-2 text-sm text-ink"
             />
           </div>
           <div className="sm:col-span-2">
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="rounded-control bg-olive px-6 py-3 font-sans text-sm font-semibold text-stone transition hover:bg-olive-deep disabled:opacity-60"
+              className="rounded-full bg-gold px-7 py-3 text-sm font-semibold text-[#2C3A12] shadow-[0_6px_18px_rgba(38,51,15,0.15)] transition hover:-translate-y-0.5 disabled:opacity-60"
             >
               {status === "submitting" ? "Sending…" : "Send message"}
             </button>
@@ -161,7 +162,7 @@ export function ContactSection() {
               </p>
             )}
             {status === "error" && (
-              <p className="mt-3 text-sm text-stamp">
+              <p className="mt-3 text-sm text-status-overdue">
                 Something went wrong. Please try again or email us directly.
               </p>
             )}
