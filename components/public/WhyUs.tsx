@@ -3,23 +3,25 @@ const REASONS = [
     glyph: "M",
     title: "MAP discipline",
     description:
-      "We follow MAP-first pricing guardrails and avoid price wars that erode your brand's value.",
+      "We price under MAP-first guardrails and stay out of the price wars that erode your brand's value across channels.",
   },
   {
     glyph: "S",
     title: "Transparent sourcing",
     description:
-      "Documented procurement and clear wholesale terms — no gray-market guesswork.",
+      "Documented procurement and clear wholesale terms on every order — no gray-market guesswork about where your product went.",
   },
   {
     glyph: "L",
     title: "Long-term focus",
-    description: "We buy for sustained sell-through, not short-term arbitrage.",
+    description:
+      "We buy for sustained, repeatable sell-through and recurring monthly orders — not one-off arbitrage flips.",
   },
   {
     glyph: "U",
     title: "U.S. operations",
-    description: "Based in Summit, NJ, with direct, responsive communication.",
+    description:
+      "Based in Summit, NJ, as a registered U.S. LLC, with direct and responsive communication.",
   },
 ] as const;
 
