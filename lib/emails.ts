@@ -114,10 +114,13 @@ Best regards,
 /**
  * Genera el email en texto plano para un tipo y proveedor: reemplaza [Contact] por el contacto,
  * [Company] por la empresa y [signature] por la firma, y recorta espacios externos.
+ * Sin persona de contacto (típico del import masivo de outreach) el saludo cae en
+ * "Dear [Company] Team," en vez de quedar como "Dear ,".
  */
 export function generateEmail(type: EmailType, p: Provider): string {
+  const greetingName = p.contact.trim() || `${p.company} Team`;
   return TEMPLATES[type]
-    .replaceAll("[Contact]", p.contact)
+    .replaceAll("[Contact]", greetingName)
     .replaceAll("[Company]", p.company)
     .replaceAll("[signature]", SIGNATURE)
     .trim();

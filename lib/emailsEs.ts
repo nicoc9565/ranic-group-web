@@ -105,8 +105,10 @@ Saludos cordiales,
  * generateEmail). NO usar para copiar/enviar — el email real va siempre en inglés.
  */
 export function generateEmailEs(type: EmailType, p: Provider): string {
+  // Mismo fallback de saludo que generateEmail: sin contacto, "equipo de [Company]".
+  const greetingName = p.contact.trim() || `equipo de ${p.company}`;
   return TEMPLATES_ES[type]
-    .replaceAll("[Contact]", p.contact)
+    .replaceAll("[Contact]", greetingName)
     .replaceAll("[Company]", p.company)
     .replaceAll("[signature]", SIGNATURE)
     .trim();

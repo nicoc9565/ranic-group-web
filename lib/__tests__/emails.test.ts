@@ -54,6 +54,15 @@ describe("generateEmail", () => {
   test("reemplaza [Company] por el nombre de la empresa", () => {
     expect(generateEmail("first_short", p)).toContain("FragranceX");
   });
+  test("sin contact, saluda 'Dear [Company] Team,'", () => {
+    const noContact = { company: "Acme Distributors", contact: "" } as Provider;
+    expect(generateEmail("first_short", noContact).startsWith("Dear Acme Distributors Team,")).toBe(
+      true,
+    );
+  });
+  test("con contact, sigue saludando por nombre", () => {
+    expect(generateEmail("first_short", p).startsWith("Dear Ces,")).toBe(true);
+  });
   test("no deja placeholders sin reemplazar", () => {
     for (const t of ALL_TYPES) {
       const body = generateEmail(t, p);
