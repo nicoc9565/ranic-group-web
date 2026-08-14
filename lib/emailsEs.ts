@@ -8,7 +8,7 @@ const SIGNATURE = `Nicolas Conti
 Managing Member | RANIC GROUP LLC
 nicolas.conti@ranicgroup.com
 www.ranicgroup.com
-+1 (201) 572-1383`;
++1 (908) 656-6042`;
 
 const TEMPLATES_ES: Record<EmailType, string> = {
   first_short: `Estimado/a [Contact]:

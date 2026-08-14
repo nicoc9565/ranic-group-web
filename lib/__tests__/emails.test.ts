@@ -48,7 +48,7 @@ describe("generateEmail", () => {
   });
   test("todos terminan con la firma (teléfono)", () => {
     for (const t of ALL_TYPES) {
-      expect(generateEmail(t, p)).toContain("+1 (201) 572-1383");
+      expect(generateEmail(t, p)).toContain("+1 (908) 656-6042");
     }
   });
   test("reemplaza [Company] por el nombre de la empresa", () => {
