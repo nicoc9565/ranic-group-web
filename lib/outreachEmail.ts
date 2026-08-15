@@ -1,0 +1,16 @@
+// Envuelve generateEmail("first_short", p) agregando lo que exige CAN-SPAM para outreach
+// automático masivo: dirección postal física + opt-out. Solo lo usa el endpoint de envío
+// automático (Task 10) — los emails manuales del CRM no pasan por acá.
+import { generateEmail } from "./emails";
+import type { Provider } from "./types";
+
+const COMPLIANCE_FOOTER = `
+
+RANIC GROUP LLC
+3 Ridgedale Ave, Summit, NJ 07901
+
+If you'd prefer not to receive future emails from us, just reply and let us know and we'll remove you from our list.`;
+
+export function generateOutreachEmail(p: Provider): string {
+  return generateEmail("first_short", p) + COMPLIANCE_FOOTER;
+}

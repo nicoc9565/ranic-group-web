@@ -62,6 +62,8 @@ export type Provider = {
   sendError?: string | null;
   /** Origen del proveedor, para auditoría. Ausente = cargado a mano antes de esta feature. */
   source?: "expo-outreach-import" | "csv-import" | "manual";
+  /** true = el proveedor pidió no recibir más emails. Se excluye de cualquier envío automático. */
+  optedOut?: boolean;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
