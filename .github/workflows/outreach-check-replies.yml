@@ -1,0 +1,14 @@
+name: Outreach — check replies
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/outreach/check-replies
+        run: |
+          curl -sS -X POST https://ranicgroup.com/api/outreach/check-replies \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail

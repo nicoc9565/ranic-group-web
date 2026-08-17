@@ -63,6 +63,9 @@ export async function POST(req: Request) {
           gmailThreadId: threadId,
           sendAttemptedAt: now,
           sendError: null,
+          // Nunca chequeado. El campo tiene que existir sí o sí: el cron de reply-detection
+          // ordena por él, y Firestore excluye del orderBy a los docs que no lo tienen.
+          replyCheckedAt: 0,
           updatedAt: now,
           ...advanceFollowUp(p, today),
         });

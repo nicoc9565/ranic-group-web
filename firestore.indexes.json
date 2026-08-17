@@ -11,6 +11,14 @@
         { "fieldPath": "optedOut", "order": "ASCENDING" },
         { "fieldPath": "sendAttemptedAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "providers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "replyCheckedAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

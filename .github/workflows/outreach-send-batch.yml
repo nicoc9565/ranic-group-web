@@ -1,0 +1,17 @@
+name: Outreach — send batch
+on:
+  schedule:
+    # cada 20 min, 13-16 UTC ≈ 9am-12pm America/New_York (ajustar ±1h en horario de verano).
+    # Los schedule de GitHub Actions son best-effort y se atrasan; da igual, el total lo acota
+    # dailyLimit en OutreachConfig, no la cantidad de corridas.
+    - cron: "*/20 13-16 * * *"
+  workflow_dispatch: {} # permite disparar manualmente desde la pestaña Actions, para probar
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST /api/outreach/send-batch
+        run: |
+          curl -sS -X POST https://ranicgroup.com/api/outreach/send-batch \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail

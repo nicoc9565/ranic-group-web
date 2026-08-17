@@ -70,6 +70,12 @@ export type Provider = {
    * muchos fabricantes OEM del exterior, a los que el template de first_short no les aplica.
    */
   outreachEligible?: boolean;
+  /**
+   * Timestamp del último chequeo de reply-detection; ordena la rotación del cron de respuestas.
+   * Lo escribe el envío automático en 0 al mandar el primer contacto: Firestore excluye de un
+   * orderBy los docs que no tienen el campo, así que sin ese 0 el proveedor nunca se chequearía.
+   */
+  replyCheckedAt?: number;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
