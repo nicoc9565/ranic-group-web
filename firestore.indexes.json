@@ -1,0 +1,17 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "providers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "contactMethod", "order": "ASCENDING" },
+        { "fieldPath": "source", "order": "ASCENDING" },
+        { "fieldPath": "outreachEligible", "order": "ASCENDING" },
+        { "fieldPath": "optedOut", "order": "ASCENDING" },
+        { "fieldPath": "sendAttemptedAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
