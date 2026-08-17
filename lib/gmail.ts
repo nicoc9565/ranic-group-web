@@ -26,11 +26,22 @@ function client() {
   return google.gmail({ version: "v1", auth });
 }
 
-function buildRawMessage(to: string, subject: string, body: string): string {
+// Cabecera de baja de lista, para que el cliente de correo ofrezca el botón nativo de cancelar
+// suscripción además de la línea de opt-out del cuerpo. Va SOLO en el outreach automático: los
+// templates que Nico copia a mano desde el CRM son mails uno a uno de una conversación en curso,
+// donde una cabecera de baja de lista no corresponde.
+//
+// Deliberadamente NO se declara List-Unsubscribe-Post: la baja de un clic (RFC 8058) exige una
+// URL https que procese la baja sin intervención humana, y no tenemos ese endpoint. Declararla
+// apuntando a un mailto es peor que no declararla.
+const LIST_UNSUBSCRIBE = `<mailto:${SENDER}?subject=Unsubscribe>`;
+
+export function buildRawMessage(to: string, subject: string, body: string): string {
   const msg = [
     `From: ${SENDER}`,
     `To: ${to}`,
     `Subject: ${subject}`,
+    `List-Unsubscribe: ${LIST_UNSUBSCRIBE}`,
     "Content-Type: text/plain; charset=utf-8",
     "",
     body,
