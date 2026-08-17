@@ -11,6 +11,7 @@
     "seed": "tsx scripts/seed.ts",
     "import-expo": "tsx scripts/import-expo.ts",
     "import-providers": "tsx scripts/import-providers.ts",
+    "import-outreach-list": "tsx scripts/import-outreach-list.ts",
     "import-transactions": "tsx scripts/import-transactions.ts",
     "import-stock": "tsx scripts/import-stock.ts",
     "migrate-remove-monthly-amazon": "tsx scripts/migrate-remove-monthly-amazon.ts"
