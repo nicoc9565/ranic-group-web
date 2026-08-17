@@ -27,6 +27,7 @@ export function ProviderDetail({
   onDelete,
   onResumeFollowUp,
   onStartFollowUp,
+  onToggleOptOut,
 }: {
   provider: Provider;
   today: Date;
@@ -36,6 +37,7 @@ export function ProviderDetail({
   onDelete: () => Promise<void> | void;
   onResumeFollowUp: () => Promise<void> | void;
   onStartFollowUp: (patch: Partial<Provider>) => Promise<void> | void;
+  onToggleOptOut: (optedOut: boolean) => Promise<void> | void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [adding, setAdding] = useState(false);
@@ -83,7 +85,30 @@ export function ProviderDetail({
               Blacklisteado
             </span>
           )}
+          {provider.optedOut && (
+            <span className="rounded-full bg-status-overdue/10 px-2 py-0.5 text-xs text-status-overdue">
+              No contactar
+            </span>
+          )}
         </div>
+
+        {/* Opt-out — el footer del outreach automático promete darlos de baja si lo piden
+            (CAN-SPAM). Este checkbox es donde ese pedido aterriza: excluye al proveedor de
+            cualquier envío automático futuro. */}
+        <label className="flex items-start gap-3 rounded-card border border-line bg-stone/50 p-3">
+          <input
+            type="checkbox"
+            checked={!!provider.optedOut}
+            onChange={(e) => onToggleOptOut(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-olive"
+          />
+          <span>
+            <span className="block text-sm font-medium text-ink">No contactar más</span>
+            <span className="block text-xs text-ink-soft">
+              Pidió no recibir más emails. Queda excluido del envío automático.
+            </span>
+          </span>
+        </label>
 
         {/* Datos de contacto */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

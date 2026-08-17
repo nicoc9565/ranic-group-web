@@ -50,9 +50,47 @@ export type Provider = {
   followUpStopped?: boolean;
   /** true = fuerza el tracking de follow-up aunque contactMethod no sea "Email". */
   followUpForced?: boolean;
+  // ── Outreach automático ──
+  // Opcionales porque los proveedores cargados antes de esta feature no los tienen
+  // (mismo criterio que followUpStopped/followUpForced). El import de outreach los
+  // escribe siempre, que es lo que necesita la query del envío en tandas.
+  /** Thread de Gmail del primer contacto automático. null si no se envió por acá. */
+  gmailThreadId?: string | null;
+  /** Timestamp del último intento de envío automático (éxito o error). */
+  sendAttemptedAt?: number | null;
+  /** Motivo de un envío automático fallido (bounce, dirección inválida, etc.). null si no falló. */
+  sendError?: string | null;
+  /** Origen del proveedor, para auditoría. Ausente = cargado a mano antes de esta feature. */
+  source?: "expo-outreach-import" | "csv-import" | "manual";
+  /** true = el proveedor pidió no recibir más emails. Se excluye de cualquier envío automático. */
+  optedOut?: boolean;
+  /**
+   * true = candidato al envío automático de primer contacto. Lo calcula el importador con la
+   * heurística de elegibilidad (ver scripts/import-outreach-list.ts): la lista de la feria trae
+   * muchos fabricantes OEM del exterior, a los que el template de first_short no les aplica.
+   */
+  outreachEligible?: boolean;
+  /**
+   * Timestamp del último chequeo de reply-detection; ordena la rotación del cron de respuestas.
+   * Lo escribe el envío automático en 0 al mandar el primer contacto: Firestore excluye de un
+   * orderBy los docs que no tienen el campo, así que sin ese 0 el proveedor nunca se chequearía.
+   */
+  replyCheckedAt?: number;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
+};
+
+/** Configuración del envío automático de outreach, un solo doc en Firestore (id fijo "config"). */
+export type OutreachConfig = {
+  /** Máximo de emails automáticos por día. Ajustable desde /admin/outreach sin redeploy. */
+  dailyLimit: number;
+  /** true = el cron manda emails; false = pausado. */
+  enabled: boolean;
+  /** Cuántos emails ya se mandaron automáticamente hoy (se resetea a las 00:00 America/New_York). */
+  sentToday: number;
+  /** yyyy-mm-dd (America/New_York) del último reset de sentToday. */
+  lastResetDate: string;
 };
 
 export type BlacklistEntry = {

@@ -48,11 +48,46 @@ describe("generateEmail", () => {
   });
   test("todos terminan con la firma (teléfono)", () => {
     for (const t of ALL_TYPES) {
-      expect(generateEmail(t, p)).toContain("+1 (201) 572-1383");
+      expect(generateEmail(t, p)).toContain("+1 (908) 656-6042");
     }
   });
   test("reemplaza [Company] por el nombre de la empresa", () => {
     expect(generateEmail("first_short", p)).toContain("FragranceX");
+  });
+  test("sin contact, saluda 'Dear [Company] Team,'", () => {
+    const noContact = { company: "Acme Distributors", contact: "" } as Provider;
+    expect(generateEmail("first_short", noContact).startsWith("Dear Acme Distributors Team,")).toBe(
+      true,
+    );
+  });
+  test("con contact, sigue saludando por nombre", () => {
+    expect(generateEmail("first_short", p).startsWith("Dear Ces,")).toBe(true);
+  });
+  test("el saludo recorta el sufijo legal de la razón social", () => {
+    const c = { company: "1791 Outdoor Lifestyle Group", contact: "" } as Provider;
+    expect(generateEmail("first_short", c).startsWith("Dear 1791 Outdoor Lifestyle Team,")).toBe(
+      true,
+    );
+  });
+  test("el cuerpo mantiene la razón social completa", () => {
+    const c = { company: "1791 Outdoor Lifestyle Group", contact: "" } as Provider;
+    expect(generateEmail("first_short", c)).toContain("1791 Outdoor Lifestyle Group products");
+  });
+  test("una razón social sin sufijo no pierde nada", () => {
+    const c = { company: "Acme Distributors", contact: "" } as Provider;
+    expect(generateEmail("first_short", c).startsWith("Dear Acme Distributors Team,")).toBe(true);
+  });
+  test("si el recorte deja el nombre vacío, usa la razón social completa", () => {
+    const c = { company: "Group Enterprises Inc.", contact: "" } as Provider;
+    expect(generateEmail("first_short", c).startsWith("Dear Group Enterprises Inc. Team,")).toBe(
+      true,
+    );
+  });
+  test("el recorte limpia la puntuación que queda colgando", () => {
+    const c = { company: "Chen Household Hardware Supply Co., Ltd.", contact: "" } as Provider;
+    expect(
+      generateEmail("first_short", c).startsWith("Dear Chen Household Hardware Supply Team,"),
+    ).toBe(true);
   });
   test("no deja placeholders sin reemplazar", () => {
     for (const t of ALL_TYPES) {

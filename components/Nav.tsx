@@ -59,6 +59,11 @@ const icons = {
       <path d="M3 7.5V16l9 4.5 9-4.5V7.5M12 12v8.5" />
     </svg>
   ),
+  outreach: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="m21 3-9.5 9.5M21 3l-6.5 18-4-8-8-4L21 3Z" />
+    </svg>
+  ),
 };
 
 const NAV: NavItem[] = [
@@ -66,6 +71,7 @@ const NAV: NavItem[] = [
   { href: "/admin/proveedores", label: "Proveedores", icon: icons.providers },
   { href: "/admin/follow-ups", label: "Follow-ups", icon: icons.followups },
   { href: "/admin/emails", label: "Emails", icon: icons.emails },
+  { href: "/admin/outreach", label: "Outreach", icon: icons.outreach },
   { href: "/admin/blacklist", label: "Blacklist", icon: icons.blacklist },
   { href: "/admin/expo-west", label: "Expo West", icon: icons.expo },
   { href: "/admin/finanzas", label: "Finanzas", icon: icons.finanzas },
@@ -150,7 +156,7 @@ export function Nav({
       </header>
 
       {/* Bottom nav — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-8 border-t border-line bg-olive-deep text-olive-tint md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-9 border-t border-line bg-olive-deep text-olive-tint md:hidden">
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (

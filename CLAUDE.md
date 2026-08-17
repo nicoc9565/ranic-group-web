@@ -68,7 +68,7 @@ improvises alcance: si algo es ambiguo, preguntá antes. La Fase 2 no toca nada 
   Managing Member | RANIC GROUP LLC
   nicolas.conti@ranicgroup.com
   www.ranicgroup.com
-  +1 (201) 572-1383
+  +1 (908) 656-6042
   ```
 - Los 3 templates textuales (short/long first contact, catalog with UPCs) van **tal cual** el spec.
 - Copiar al portapapeles = **texto plano**.
