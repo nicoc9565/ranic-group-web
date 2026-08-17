@@ -12,7 +12,11 @@ const SCOPES = [
 const SENDER = "nicolas.conti@ranicgroup.com";
 
 function client() {
-  const key = JSON.parse(process.env.GMAIL_SERVICE_ACCOUNT_JSON ?? "{}");
+  // Las credenciales están cargadas solo en Production, no en preview: si falta, fallar con un
+  // mensaje claro en vez de construir un JWT vacío y morir adentro de googleapis.
+  const raw = process.env.GMAIL_SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error("Falta GMAIL_SERVICE_ACCOUNT_JSON");
+  const key = JSON.parse(raw);
   const auth = new google.auth.JWT({
     email: key.client_email,
     key: key.private_key,

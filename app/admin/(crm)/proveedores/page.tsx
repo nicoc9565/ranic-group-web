@@ -187,6 +187,9 @@ export default function ProveedoresPage() {
             updateProvider(detailProvider.id, { followUpStopped: false })
           }
           onStartFollowUp={(patch) => updateProvider(detailProvider.id, patch)}
+          onToggleOptOut={(optedOut) =>
+            updateProvider(detailProvider.id, { optedOut })
+          }
         />
       )}
     </>

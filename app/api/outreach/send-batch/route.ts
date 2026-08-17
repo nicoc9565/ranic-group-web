@@ -20,16 +20,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // ?dryRun=1 corre la query y devuelve a quién se le mandaría, sin mandar ni escribir nada.
+  // Sirve para verificar que los filtros matchean datos reales sin encender el envío.
+  const dryRun = new URL(req.url).searchParams.get("dryRun") === "1";
+
   const config = await getOutreachConfigAdmin();
-  if (!config.enabled) {
+  if (!config.enabled && !dryRun) {
     return NextResponse.json({ sent: 0, reason: "outreach pausado" });
   }
-  if (config.sentToday >= config.dailyLimit) {
+  if (config.sentToday >= config.dailyLimit && !dryRun) {
     return NextResponse.json({ sent: 0, reason: "límite diario alcanzado" });
   }
 
   const remaining = config.dailyLimit - config.sentToday;
-  const take = Math.min(BATCH_SIZE, remaining);
+  const take = dryRun ? BATCH_SIZE : Math.min(BATCH_SIZE, remaining);
 
   // Scoped a source === "expo-outreach-import" a propósito: los proveedores manuales
   // pre-existentes no tienen optedOut seteado, y aunque lo tuvieran, el envío automático no debe
@@ -44,6 +48,20 @@ export async function POST(req: Request) {
     .where("sendAttemptedAt", "==", null)
     .limit(take)
     .get();
+
+  if (dryRun) {
+    return NextResponse.json({
+      dryRun: true,
+      sent: 0,
+      enabled: config.enabled,
+      candidates: snap.size,
+      sample: snap.docs.map((d) => ({
+        id: d.id,
+        company: d.get("company"),
+        email: d.get("email"),
+      })),
+    });
+  }
 
   let sent = 0;
   const errors: string[] = [];
