@@ -6,7 +6,7 @@ import { google } from "googleapis";
 import {
   bounceReason,
   classifyThread,
-  isBounce,
+  looksLikeBounce,
   type ThreadMessage,
   type ThreadState,
 } from "./bounceClassification";
@@ -124,7 +124,7 @@ export async function inspectThread(
 
   const newest = messages[messages.length - 1];
   const msg: ThreadMessage = { headers: headerMap(newest.payload?.headers ?? undefined) };
-  if (!isBounce(msg)) return { state: "respuesta", reason: null };
+  if (!looksLikeBounce(msg)) return { state: "respuesta", reason: null };
 
   const full = await gmail.users.messages.get({
     userId: "me",

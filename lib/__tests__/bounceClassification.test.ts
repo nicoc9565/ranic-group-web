@@ -45,13 +45,47 @@ describe("classifyThread", () => {
     expect(classifyThread(softBounce)).toBe("rebote-blando");
   });
   // Conservador: mejor reintentar a una direccion viva que condenar una por no saber parsear.
-  test("rebote sin Status legible cae en blando, no en duro", () => {
+  test("rebote estructural sin Status legible cae en blando, no en duro", () => {
     expect(
       classifyThread({
-        headers: { from: "mailer-daemon@googlemail.com" },
+        headers: {
+          from: "mailer-daemon@googlemail.com",
+          "content-type": "multipart/report; report-type=delivery-status",
+        },
         body: "Something went wrong, no machine-readable status here.",
       }),
     ).toBe("rebote-blando");
+  });
+  // El From no puede ser la señal primaria: muchos DSN vienen con remitente nulo.
+  test("detecta el rebote con remitente nulo si trae la estructura de DSN", () => {
+    expect(
+      classifyThread({
+        headers: {
+          from: "<>",
+          "content-type": "multipart/report; report-type=delivery-status",
+        },
+        body: "Status: 5.1.1",
+      }),
+    ).toBe("rebote-duro");
+  });
+  // Y al revés: un proveedor que escribe de verdad desde postmaster@ no es un rebote.
+  test("un humano escribiendo desde postmaster@ no es rebote", () => {
+    expect(
+      classifyThread({
+        headers: { from: "postmaster@acmedistributors.com", "content-type": "text/plain" },
+        body: "Hi Nicolas, here is our price list.",
+      }),
+    ).toBe("respuesta");
+  });
+  // Daemon sin ningún código DSN legible: se deja para revisión humana en vez de condenar la
+  // dirección, que es el error caro.
+  test("mensaje de daemon sin codigo DSN queda como respuesta, no como rebote", () => {
+    expect(
+      classifyThread({
+        headers: { from: "mailer-daemon@googlemail.com", "content-type": "text/plain" },
+        body: "Your message is being delayed, we will keep trying.",
+      }),
+    ).toBe("respuesta");
   });
   test("detecta el rebote por X-Failed-Recipients aunque el From sea raro", () => {
     expect(

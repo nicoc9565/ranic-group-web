@@ -17,15 +17,36 @@ export type ThreadMessage = {
 const DAEMON_RE = /(mailer-daemon|postmaster)@/i;
 
 /**
- * true si el mensaje es una notificación de entrega fallida. Tres señales, de más a menos
- * confiable. Deliberadamente NO se mira el asunto: "Delivery Status Notification (Failure)"
- * depende del idioma de la cuenta y se rompe si alguien cambia la configuración.
+ * Señal PRIMARIA: el formato estándar de notificación de entrega (RFC 3464). Es la única que
+ * vale por sí sola junto con X-Failed-Recipients, porque son estructurales del rebote y ningún
+ * mail legítimo las trae.
+ *
+ * Deliberadamente NO se mira el asunto: "Delivery Status Notification (Failure)" depende del
+ * idioma de la cuenta y un humano puede responder citándolo.
  */
-export function isBounce(msg: ThreadMessage): boolean {
+function hasBounceStructure(msg: ThreadMessage): boolean {
   const contentType = msg.headers["content-type"] ?? "";
-  if (/report-type=delivery-status/i.test(contentType)) return true;
-  if (DAEMON_RE.test(msg.headers["from"] ?? "")) return true;
-  return "x-failed-recipients" in msg.headers;
+  return (
+    /report-type=delivery-status/i.test(contentType) || "x-failed-recipients" in msg.headers
+  );
+}
+
+/**
+ * Señal de CORROBORACIÓN, nunca suficiente sola. Gmail manda desde mailer-daemon@googlemail.com,
+ * pero otros MTA usan postmaster@ y muchos DSN vienen con remitente nulo (<>), así que apoyarse
+ * en el From haría que esto funcione contra Google y falle contra cualquier otro servidor.
+ * Y al revés: un proveedor que escribe de verdad desde postmaster@suempresa.com no es un rebote.
+ */
+function fromMailDaemon(msg: ThreadMessage): boolean {
+  return DAEMON_RE.test(msg.headers["from"] ?? "");
+}
+
+/**
+ * Prescreen barato sobre las cabeceras: decide si vale la pena bajar el cuerpo completo para
+ * buscar el código DSN. Acá sí entra el From, porque equivocarse solo cuesta una llamada de más.
+ */
+export function looksLikeBounce(msg: ThreadMessage): boolean {
+  return hasBounceStructure(msg) || fromMailDaemon(msg);
 }
 
 /**
@@ -41,13 +62,18 @@ export function dsnStatus(body: string | undefined): string | null {
  * Estado del hilo a partir del mensaje más nuevo posterior al que mandamos nosotros.
  * `null` = el hilo no tiene mensajes nuevos.
  *
- * Un rebote sin línea Status: legible se trata como blando, no como duro: es preferible
- * reintentarle a una dirección viva que condenar una por un formato que no supimos parsear.
+ * Es rebote si trae la estructura de un DSN, o si viene de un daemon Y además tiene un código
+ * DSN en el cuerpo. El From solo no alcanza: ver fromMailDaemon.
+ *
+ * Un rebote sin línea Status: legible se trata como blando, no como duro. La asimetría es
+ * deliberada: marcar duro de más apaga el envío y el follow-up de un proveedor que quizás está
+ * vivo; marcar blando de más solo deja una nota.
  */
 export function classifyThread(newest: ThreadMessage | null): ThreadState {
   if (!newest) return "sin-respuesta";
-  if (!isBounce(newest)) return "respuesta";
   const status = dsnStatus(newest.body);
+  const isBounce = hasBounceStructure(newest) || (fromMailDaemon(newest) && status !== null);
+  if (!isBounce) return "respuesta";
   return status?.startsWith("5.") ? "rebote-duro" : "rebote-blando";
 }
 

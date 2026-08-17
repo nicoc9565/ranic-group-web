@@ -179,6 +179,11 @@ async function main() {
       console.log("✓ dailyLimit →", value, "|", JSON.stringify(await getOutreachConfigAdmin()));
       return;
     }
+    case "reset-totals": {
+      await CONFIG_REF().update({ sentTotal: 0, bouncedTotal: 0, pausedReason: null });
+      console.log("✓ contadores en 0 |", JSON.stringify(await getOutreachConfigAdmin()));
+      return;
+    }
     case "reset-counter": {
       await CONFIG_REF().update({ sentToday: 0 });
       console.log("✓ sentToday → 0 |", JSON.stringify(await getOutreachConfigAdmin()));
