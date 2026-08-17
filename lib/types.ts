@@ -64,6 +64,12 @@ export type Provider = {
   source?: "expo-outreach-import" | "csv-import" | "manual";
   /** true = el proveedor pidió no recibir más emails. Se excluye de cualquier envío automático. */
   optedOut?: boolean;
+  /**
+   * true = candidato al envío automático de primer contacto. Lo calcula el importador con la
+   * heurística de elegibilidad (ver scripts/import-outreach-list.ts): la lista de la feria trae
+   * muchos fabricantes OEM del exterior, a los que el template de first_short no les aplica.
+   */
+  outreachEligible?: boolean;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;

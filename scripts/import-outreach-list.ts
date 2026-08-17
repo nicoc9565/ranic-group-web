@@ -8,7 +8,7 @@
  *   npm run import-outreach-list -- --file "docs/Lista-de-Empresas-Exhibidoras.xlsx"
  */
 import "./env";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import * as XLSX from "xlsx";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import {
@@ -36,12 +36,77 @@ function clean(value: unknown): string {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// ── Elegibilidad para el envío automático ─────────────────────────────────
+// La lista es del National Hardware Show y trae muchos fabricantes OEM del exterior: el template
+// first_short (pide wholesale price list con UPCs y pedidos mensuales) no les aplica, y mandarles
+// en frío genera bounces y marcas de spam. Se importan igual, pero marcados como no elegibles.
+// Las listas van acá arriba para poder ajustarlas sin tocar la lógica.
+
+/** TLDs que damos por no-US para este propósito. */
+const NON_US_TLDS = new Set(["cn", "tw", "in", "hk", "kr", "vn", "pk", "tr", "ru"]);
+
+/** Webmails de uso mayoritariamente asiático. */
+const NON_US_WEBMAIL = new Set([
+  "163.com",
+  "126.com",
+  "qq.com",
+  "foxmail.com",
+  "sina.com",
+  "aliyun.com",
+  "naver.com",
+]);
+
+type IneligibleReason = "sin email" | "teléfono internacional" | "TLD no-US" | "webmail no-US";
+
+/** Último label del host: "www.acme.com.cn" → "cn". "" si no se puede determinar. */
+function tld(host: string): string {
+  const clean = host
+    .toLowerCase()
+    .replace(/^[a-z]+:\/\//, "")
+    .replace(/^www\./, "")
+    .split(/[/?#]/)[0]
+    .replace(/\.$/, "");
+  const parts = clean.split(".");
+  return parts.length > 1 ? parts[parts.length - 1] : "";
+}
+
+/**
+ * Motivos por los que un proveedor NO es candidato al envío automático, en el orden del plan.
+ * Vacío = elegible. Se devuelven todos los que aplican (el primero es el que se reporta).
+ */
+function ineligibleReasons(row: {
+  email: string;
+  phone: string;
+  website: string;
+}): IneligibleReason[] {
+  const reasons: IneligibleReason[] = [];
+  if (!EMAIL_RE.test(row.email)) reasons.push("sin email");
+
+  // Prefijo internacional distinto de +1 (también en notación 00 + código de país).
+  const phone = row.phone.replace(/[\s()-]/g, "");
+  if ((/^\+/.test(phone) && !/^\+1/.test(phone)) || (/^00/.test(phone) && !/^001/.test(phone))) {
+    reasons.push("teléfono internacional");
+  }
+
+  const emailDomain = row.email.toLowerCase().split("@")[1] ?? "";
+  if (NON_US_TLDS.has(tld(row.website)) || NON_US_TLDS.has(tld(emailDomain))) {
+    reasons.push("TLD no-US");
+  }
+  if (NON_US_WEBMAIL.has(emailDomain)) reasons.push("webmail no-US");
+
+  return reasons;
+}
+
 type ParsedProvider = Omit<Provider, "id" | "createdAt" | "updatedAt">;
+
+/** Motivos de exclusión por slug, para el desglose y el CSV de revisión. */
+type ExclusionLog = Map<string, IneligibleReason[]>;
 
 function parseRows(filePath: string): {
   providers: Map<string, ParsedProvider>;
   totalRows: number;
   dupesInFile: number;
+  exclusions: ExclusionLog;
 } {
   const buf = readFileSync(filePath);
   const wb = XLSX.read(buf, { type: "buffer" });
@@ -49,6 +114,7 @@ function parseRows(filePath: string): {
   const rows: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
   const providers = new Map<string, ParsedProvider>();
+  const exclusions: ExclusionLog = new Map();
   let dupesInFile = 0;
   for (const row of rows) {
     const company = clean(row["Company Name"]);
@@ -61,9 +127,16 @@ function parseRows(filePath: string): {
     }
 
     const email = clean(row["Email Address"]);
+    const phone = clean(row["Phone Number"]);
+    const website = clean(row["Website"]);
     const hasEmail = EMAIL_RE.test(email);
+    // contactMethod refleja el dato real del proveedor (y activa el Follow-up Track). La
+    // exclusión del envío automático va aparte, en outreachEligible.
     const contactMethod: ContactMethod = hasEmail ? "Email" : "Web";
     const status: Status = "Por Contactar";
+
+    const reasons = ineligibleReasons({ email, phone, website });
+    if (reasons.length > 0) exclusions.set(key, reasons);
 
     providers.set(key, {
       company,
@@ -71,9 +144,9 @@ function parseRows(filePath: string): {
       email: hasEmail ? email : "",
       category: "General Merchandise", // sin descripción/notas confiables para inferCategory
       status,
-      website: clean(row["Website"]),
+      website,
       blacklisted: false,
-      phone: clean(row["Phone Number"]),
+      phone,
       address: "",
       contactMethod,
       score: 0,
@@ -86,9 +159,35 @@ function parseRows(filePath: string): {
       sendError: null,
       source: "expo-outreach-import",
       optedOut: false,
+      outreachEligible: reasons.length === 0,
     });
   }
-  return { providers, totalRows: rows.length, dupesInFile };
+  return { providers, totalRows: rows.length, dupesInFile, exclusions };
+}
+
+/** Escapa un campo para CSV (comillas dobles + duplicado de comillas internas). */
+function csvCell(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+/** Vuelca los excluidos a CSV para que Nico revise si la heurística se come alguno legítimo. */
+function writeExclusionsCsv(
+  path: string,
+  providers: Map<string, ParsedProvider>,
+  exclusions: ExclusionLog,
+): number {
+  const lines = ["Company,Email,Telefono,Website,Criterios"];
+  let count = 0;
+  for (const [key, reasons] of exclusions) {
+    const p = providers.get(key);
+    if (!p) continue;
+    lines.push(
+      [p.company, p.email, p.phone, p.website, reasons.join(" + ")].map(csvCell).join(","),
+    );
+    count++;
+  }
+  writeFileSync(path, `﻿${lines.join("\r\n")}\r\n`, "utf8");
+  return count;
 }
 
 /**
@@ -125,7 +224,7 @@ async function main() {
   const filePath = args[fileIdx + 1];
   const dryRun = args.includes("--dry-run");
 
-  const { providers, totalRows, dupesInFile } = parseRows(filePath);
+  const { providers, totalRows, dupesInFile, exclusions } = parseRows(filePath);
 
   const password = process.env.SEED_USER_PASSWORD;
   const email = process.env.SEED_USER_EMAIL ?? "nicolas.conti@ranicgroup.com";
@@ -141,13 +240,46 @@ async function main() {
   console.log(`Empresas únicas: ${providers.size}`);
   console.log(`Ya existían (proveedor o blacklist): ${providers.size - toImport.length}`);
   console.log(`Nuevos a importar: ${toImport.length}`);
-  console.log(`  con email válido → contactMethod "Email" (candidatos a envío automático): ${withEmail.length}`);
+  console.log(`  con email válido → contactMethod "Email": ${withEmail.length}`);
   console.log(`  sin email → contactMethod "Web": ${toImport.length - withEmail.length}`);
 
+  const eligible = toImport.filter(([, p]) => p.outreachEligible);
+  const ineligible = toImport.filter(([, p]) => !p.outreachEligible);
+
+  console.log(`\nElegibles para envío automático: ${eligible.length}`);
+  console.log(`No elegibles: ${ineligible.length}`);
+
+  // Primer criterio que lo excluyó (mutuamente excluyente: los conteos suman el total).
+  const byFirstReason = new Map<string, number>();
+  // Cuántos cumplen cada criterio, contando solapamientos.
+  const byAnyReason = new Map<string, number>();
+  for (const [key] of ineligible) {
+    const reasons = exclusions.get(key) ?? [];
+    if (reasons.length === 0) continue;
+    byFirstReason.set(reasons[0], (byFirstReason.get(reasons[0]) ?? 0) + 1);
+    for (const r of reasons) byAnyReason.set(r, (byAnyReason.get(r) ?? 0) + 1);
+  }
+  console.log("  por criterio (el primero que aplicó, suman el total):");
+  for (const [r, n] of [...byFirstReason].sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${r.padEnd(24)} ${n}`);
+  }
+  console.log("  por criterio (contando solapamientos):");
+  for (const [r, n] of [...byAnyReason].sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${r.padEnd(24)} ${n}`);
+  }
+
   if (dryRun) {
-    console.log("\nPrimeros 5 a importar:");
-    for (const [key, p] of toImport.slice(0, 5)) {
-      console.log(`  ${key} | ${p.company} | ${p.email || "(sin email)"} | ${p.contactMethod}`);
+    const csvPath = "docs/outreach-excluidos.csv";
+    const written = writeExclusionsCsv(
+      csvPath,
+      new Map(toImport),
+      new Map([...exclusions].filter(([k]) => !existing.has(k))),
+    );
+    console.log(`\nCSV de excluidos: ${csvPath} (${written} filas)`);
+
+    console.log("\nPrimeros 5 elegibles:");
+    for (const [key, p] of eligible.slice(0, 5)) {
+      console.log(`  ${key} | ${p.company} | ${p.email} | ${p.phone || "(sin tel)"}`);
     }
     console.log("\n(--dry-run) No se escribió nada en Firestore.");
     process.exit(0);
