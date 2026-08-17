@@ -56,7 +56,35 @@ const NON_US_WEBMAIL = new Set([
   "naver.com",
 ]);
 
-type IneligibleReason = "sin email" | "teléfono internacional" | "TLD no-US" | "webmail no-US";
+type IneligibleReason =
+  | "sin email"
+  | "teléfono internacional"
+  | "TLD no-US"
+  | "webmail no-US"
+  | "teléfono no-NANP";
+
+const ALL_REASONS: IneligibleReason[] = [
+  "sin email",
+  "teléfono internacional",
+  "TLD no-US",
+  "webmail no-US",
+  "teléfono no-NANP",
+];
+
+/** Formato del North American Numbering Plan: código de área y central arrancan en [2-9]. */
+const NANP_RE = /^[2-9]\d{2}[2-9]\d{6}$/;
+
+/**
+ * true si el teléfono contradice el formato US/Canadá. Sin teléfono NO penaliza: el criterio
+ * castiga el dato que contradice, no el dato faltante. Atrapa a los fabricantes asiáticos que
+ * escriben el código de país sin "+" (86-579-..., 886-4-..., 13901574565).
+ */
+function isNonNanpPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return false;
+  const core = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  return !NANP_RE.test(core);
+}
 
 /** Último label del host: "www.acme.com.cn" → "cn". "" si no se puede determinar. */
 function tld(host: string): string {
@@ -93,6 +121,7 @@ function ineligibleReasons(row: {
     reasons.push("TLD no-US");
   }
   if (NON_US_WEBMAIL.has(emailDomain)) reasons.push("webmail no-US");
+  if (isNonNanpPhone(row.phone)) reasons.push("teléfono no-NANP");
 
   return reasons;
 }
@@ -170,20 +199,31 @@ function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
-/** Vuelca los excluidos a CSV para que Nico revise si la heurística se come alguno legítimo. */
+/**
+ * Vuelca excluidos a CSV. Además de la columna resumen "Criterios" hay una columna por criterio
+ * con "x", para poder filtrar en Excel sin leer texto libre. `only` limita a los que cayeron
+ * únicamente por ese criterio (las vistas de revisión que pidió Nico).
+ */
 function writeExclusionsCsv(
   path: string,
   providers: Map<string, ParsedProvider>,
   exclusions: ExclusionLog,
+  only?: IneligibleReason,
 ): number {
-  const lines = ["Company,Email,Telefono,Website,Criterios"];
+  const header = ["Company", "Email", "Telefono", "Website", "Criterios", "CantCriterios"]
+    .concat(ALL_REASONS)
+    .map(csvCell)
+    .join(",");
+  const lines = [header];
   let count = 0;
   for (const [key, reasons] of exclusions) {
+    if (only && !(reasons.length === 1 && reasons[0] === only)) continue;
     const p = providers.get(key);
     if (!p) continue;
-    lines.push(
-      [p.company, p.email, p.phone, p.website, reasons.join(" + ")].map(csvCell).join(","),
-    );
+    const cells = [p.company, p.email, p.phone, p.website, reasons.join(" + "), String(reasons.length)]
+      .concat(ALL_REASONS.map((r) => (reasons.includes(r) ? "x" : "")))
+      .map(csvCell);
+    lines.push(cells.join(","));
     count++;
   }
   writeFileSync(path, `﻿${lines.join("\r\n")}\r\n`, "utf8");
@@ -269,13 +309,21 @@ async function main() {
   }
 
   if (dryRun) {
-    const csvPath = "docs/outreach-excluidos.csv";
-    const written = writeExclusionsCsv(
-      csvPath,
-      new Map(toImport),
-      new Map([...exclusions].filter(([k]) => !existing.has(k))),
-    );
-    console.log(`\nCSV de excluidos: ${csvPath} (${written} filas)`);
+    const rows = new Map(toImport);
+    const excl = new Map([...exclusions].filter(([k]) => !existing.has(k)));
+    const csvs: [string, number][] = [
+      ["docs/outreach-excluidos.csv", writeExclusionsCsv("docs/outreach-excluidos.csv", rows, excl)],
+      [
+        "docs/outreach-excluidos-solo-tld.csv",
+        writeExclusionsCsv("docs/outreach-excluidos-solo-tld.csv", rows, excl, "TLD no-US"),
+      ],
+      [
+        "docs/outreach-excluidos-solo-nanp.csv",
+        writeExclusionsCsv("docs/outreach-excluidos-solo-nanp.csv", rows, excl, "teléfono no-NANP"),
+      ],
+    ];
+    console.log("\nCSVs de revisión:");
+    for (const [path, n] of csvs) console.log(`  ${path.padEnd(40)} ${n} filas`);
 
     console.log("\nPrimeros 5 elegibles:");
     for (const [key, p] of eligible.slice(0, 5)) {
