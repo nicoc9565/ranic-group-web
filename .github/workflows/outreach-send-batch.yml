@@ -10,8 +10,24 @@ jobs:
   send:
     runs-on: ubuntu-latest
     steps:
+      # Host canónico con www a propósito: el apex responde 307 y curl sin -L no lo sigue, así
+      # que el endpoint no se ejecutaba y el job quedaba verde igual. Y tampoco se arregla con
+      # -L: en un redirect cross-origin curl descarta el header Authorization y recibiríamos un
+      # 401 que parece un secreto mal cargado.
+      #
+      # --fail-with-body en lugar de --fail: sin ninguno de los dos, curl sale con código 0 ante
+      # un 401, un 404 o un 500, y una campaña de 46 días puede detenerse en silencio mostrando
+      # tildes verdes todo el mes. --fail-with-body además deja el cuerpo en el log, que es lo
+      # que se necesita para diagnosticar.
+      #
+      # Por qué los dos problemas no eran independientes: **--fail no falla ante un 3xx**, solo
+      # cubre 4xx y 5xx. La primera corrida real dio verde imprimiendo "Redirecting..." con el
+      # --fail ya puesto, porque para curl el redirect nunca fue un error. O sea que el chequeo
+      # que teníamos era ciego justo al caso que estaba ocurriendo. Con el host correcto eso deja
+      # de importar, pero explica por qué el chequeo existía y no servía.
       - name: POST /api/outreach/send-batch
         run: |
-          curl -sS -X POST https://ranicgroup.com/api/outreach/send-batch \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            --fail
+          curl -sS --fail-with-body \
+            -w '\nHTTP %{http_code}\n' \
+            -X POST https://www.ranicgroup.com/api/outreach/send-batch \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
