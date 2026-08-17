@@ -63,7 +63,7 @@ export function ContactSection() {
           .
         </p>
         <p className="mt-3 font-mono text-xs uppercase tracking-[0.15em] text-ink-soft">
-          nicolas.conti@ranicgroup.com · +1 (201) 572-1383 · Summit, NJ
+          nicolas.conti@ranicgroup.com · +1 (908) 656-6042 · Summit, NJ
         </p>
 
         <form

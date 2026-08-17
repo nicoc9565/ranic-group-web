@@ -21,7 +21,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <p className="relative z-10 mx-auto mt-8 max-w-5xl font-mono text-xs text-cream/60">
-        RANIC GROUP LLC · Summit, NJ · +1 (201) 572-1383 · © 2026
+        RANIC GROUP LLC · Summit, NJ · +1 (908) 656-6042 · © 2026
       </p>
     </footer>
   );
