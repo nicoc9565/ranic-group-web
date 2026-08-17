@@ -70,7 +70,8 @@ export async function POST(req: Request) {
     const now = Date.now();
     try {
       const body = generateOutreachEmail(p);
-      const subject = `Wholesale inquiry — ${p.company}`;
+      // Guion común, no raya larga: un caracter menos que miran con lupa los filtros de spam.
+      const subject = `Wholesale inquiry - ${p.company}`;
       const { threadId } = await sendOutreachEmail(p.email, subject, body);
       const today = new Date().toISOString().slice(0, 10);
       await adminDb()

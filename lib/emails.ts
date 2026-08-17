@@ -111,6 +111,48 @@ Best regards,
 [signature]`,
 };
 
+// Sufijos de razón social que se recortan SOLO para el saludo: "1791 Outdoor Lifestyle Group"
+// saluda como "Dear 1791 Outdoor Lifestyle Team," en vez de repetir "Group Team". El nombre
+// completo se mantiene intacto en el cuerpo del email y en el CRM.
+const LEGAL_SUFFIXES = new Set([
+  "inc",
+  "incorporated",
+  "llc",
+  "llp",
+  "lp",
+  "ltd",
+  "limited",
+  "corp",
+  "corporation",
+  "co",
+  "company",
+  "group",
+  "enterprises",
+  "holdings",
+  "international",
+  "gmbh",
+  "sa",
+  "srl",
+  "bv",
+  "plc",
+  "pvt",
+]);
+
+/**
+ * Razón social sin los sufijos legales del final, para el saludo. Si el recorte deja el nombre
+ * vacío (ej. "Group Enterprises Inc."), devuelve el nombre completo sin tocar.
+ */
+function greetingCompany(company: string): string {
+  const tokens = company.trim().split(/\s+/);
+  while (tokens.length > 0) {
+    const last = tokens[tokens.length - 1].replace(/[.,]/g, "").toLowerCase();
+    if (!LEGAL_SUFFIXES.has(last)) break;
+    tokens.pop();
+  }
+  const trimmed = tokens.join(" ").replace(/[\s,.]+$/, "");
+  return trimmed || company;
+}
+
 /**
  * Genera el email en texto plano para un tipo y proveedor: reemplaza [Contact] por el contacto,
  * [Company] por la empresa y [signature] por la firma, y recorta espacios externos.
@@ -118,7 +160,7 @@ Best regards,
  * "Dear [Company] Team," en vez de quedar como "Dear ,".
  */
 export function generateEmail(type: EmailType, p: Provider): string {
-  const greetingName = p.contact.trim() || `${p.company} Team`;
+  const greetingName = p.contact.trim() || `${greetingCompany(p.company)} Team`;
   return TEMPLATES[type]
     .replaceAll("[Contact]", greetingName)
     .replaceAll("[Company]", p.company)
