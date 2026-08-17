@@ -172,6 +172,13 @@ async function main() {
       return send();
     case "verify":
       return verify();
+    case "set-limit": {
+      const value = Number(flag("value"));
+      if (!Number.isInteger(value) || value < 0) throw new Error("Falta --value <entero >= 0>");
+      await CONFIG_REF().update({ dailyLimit: value });
+      console.log("✓ dailyLimit →", value, "|", JSON.stringify(await getOutreachConfigAdmin()));
+      return;
+    }
     case "reset-counter": {
       await CONFIG_REF().update({ sentToday: 0 });
       console.log("✓ sentToday → 0 |", JSON.stringify(await getOutreachConfigAdmin()));

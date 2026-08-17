@@ -32,8 +32,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ sent: 0, reason: "límite diario alcanzado" });
   }
 
+  // El dry-run tiene que simular exactamente lo que haría el envío real, incluido cuántos toma:
+  // si mostrara más, dejaría de ser una vista previa de la corrida y no serviría para verificar.
   const remaining = config.dailyLimit - config.sentToday;
-  const take = dryRun ? BATCH_SIZE : Math.min(BATCH_SIZE, remaining);
+  const take = Math.max(0, Math.min(BATCH_SIZE, remaining));
+  if (take === 0) {
+    return NextResponse.json({ dryRun, sent: 0, candidates: 0, reason: "límite diario alcanzado" });
+  }
 
   // Scoped a source === "expo-outreach-import" a propósito: los proveedores manuales
   // pre-existentes no tienen optedOut seteado, y aunque lo tuvieran, el envío automático no debe
