@@ -3,6 +3,13 @@
 // todo el Workspace en admin.google.com — sin OAuth de usuario, sin token que caduque. Nunca
 // importar este archivo desde código que corre en el browser — usa env vars sin NEXT_PUBLIC_.
 import { google } from "googleapis";
+import {
+  bounceReason,
+  classifyThread,
+  looksLikeBounce,
+  type ThreadMessage,
+  type ThreadState,
+} from "./bounceClassification";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
@@ -68,9 +75,142 @@ export async function sendOutreachEmail(
   return { threadId: res.data.threadId };
 }
 
-/** true si el thread tiene más de 1 mensaje (o sea, hubo respuesta además del envío inicial). */
-export async function hasNewReply(threadId: string): Promise<boolean> {
+const BOUNCE_HEADERS = ["From", "Content-Type", "X-Failed-Recipients", "Subject", "Date"];
+
+/**
+ * Consulta de recuperación de rebotes. Sobre-captura a propósito: `from:mailer-daemon` es cómo
+ * rebota Google, pero los destinatarios están en dominios ajenos y sus MTA usan postmaster@,
+ * MAILER-DAEMON@<dominio> o remitente nulo. Se traen también los asuntos típicos y después
+ * classifyThread —función pura— decide. Un falso positivo acá no cuesta nada; un falso negativo
+ * es un rebote que nunca detectamos.
+ *
+ * Que el asunto entre en la CONSULTA no contradice la regla de no clasificar por asunto: son dos
+ * capas, la consulta amplía el candidato y la clasificación filtra.
+ */
+const BOUNCE_QUERY = [
+  "(from:mailer-daemon OR from:postmaster OR",
+  'subject:"undeliverable" OR subject:"delivery status notification" OR',
+  'subject:"returned mail" OR subject:"failure notice" OR subject:"delivery has failed")',
+].join(" ");
+
+/** Cabeceras de la Gmail API a un mapa en minúscula, que es lo que espera la clasificación. */
+function headerMap(
+  headers: { name?: string | null; value?: string | null }[] | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const h of headers ?? []) {
+    if (h.name) out[h.name.toLowerCase()] = h.value ?? "";
+  }
+  return out;
+}
+
+/** Concatena el texto plano de todas las partes del mensaje (el reporte DSN es una de ellas). */
+function plainTextBody(payload: unknown): string {
+  const parts: string[] = [];
+  const walk = (node: Record<string, unknown> | undefined) => {
+    if (!node) return;
+    const data = (node.body as { data?: string } | undefined)?.data;
+    if (data) parts.push(Buffer.from(data, "base64url").toString("utf8"));
+    for (const child of (node.parts as Record<string, unknown>[] | undefined) ?? []) walk(child);
+  };
+  walk(payload as Record<string, unknown> | undefined);
+  return parts.join("\n");
+}
+
+export type Bounce = {
+  messageId: string;
+  /** Dirección que falló, para correlacionar con Provider.email. */
+  recipient: string;
+  state: "rebote-duro" | "rebote-blando";
+  reason: string;
+  /** Epoch ms de recepción del DSN. Se compara contra sendAttemptedAt del proveedor. */
+  receivedAt: number;
+};
+
+/** Dirección que falló: la cabecera de Gmail, o el Final-Recipient del reporte RFC 3464. */
+function failedRecipient(msg: ThreadMessage): string | null {
+  const header = msg.headers["x-failed-recipients"];
+  if (header) return header.split(",")[0].trim().toLowerCase();
+  const final = /^\s*Final-Recipient:\s*rfc822;\s*(\S+)/im.exec(msg.body ?? "")?.[1];
+  return final ? final.trim().toLowerCase() : null;
+}
+
+/**
+ * Recupera los rebotes del buzón de los últimos `days` días. NO se apoya en el hilo del envío:
+ * Gmail entrega el DSN en un hilo distinto (verificado 2026-08-17), así que inspeccionar el hilo
+ * original nunca los encuentra.
+ */
+export async function listRecentBounces(days: number): Promise<Bounce[]> {
   const gmail = client();
-  const res = await gmail.users.threads.get({ userId: "me", id: threadId, format: "minimal" });
-  return (res.data.messages?.length ?? 0) > 1;
+  const res = await gmail.users.messages.list({
+    userId: "me",
+    q: `${BOUNCE_QUERY} newer_than:${days}d`,
+    // Spam y papelera incluidos a propósito. Un DSN puede caer en spam, y sobre todo: para un
+    // humano los avisos de rebote son ruido y se borran al limpiar la casilla. Pasó exactamente
+    // eso durante la prueba del 2026-08-17 — el DSN apareció con label TRASH y la búsqueda por
+    // defecto dejó de encontrarlo. La detección no puede depender de que nadie ordene su inbox.
+    includeSpamTrash: true,
+    maxResults: 200,
+  });
+
+  const bounces: Bounce[] = [];
+  for (const ref of res.data.messages ?? []) {
+    if (!ref.id) continue;
+    const full = await gmail.users.messages.get({ userId: "me", id: ref.id, format: "full" });
+    const msg: ThreadMessage = {
+      headers: headerMap(full.data.payload?.headers ?? undefined),
+      body: plainTextBody(full.data.payload),
+    };
+    const state = classifyThread(msg);
+    if (state !== "rebote-duro" && state !== "rebote-blando") continue;
+
+    const recipient = failedRecipient(msg);
+    if (!recipient) continue;
+
+    bounces.push({
+      messageId: ref.id,
+      recipient,
+      state,
+      reason: bounceReason(msg),
+      receivedAt: Number(full.data.internalDate ?? 0),
+    });
+  }
+  return bounces;
+}
+
+/**
+ * Clasifica el hilo mirando el mensaje más nuevo posterior al que mandamos nosotros. Devuelve
+ * también el motivo cuando es rebote duro, para escribirlo en `sendError`.
+ *
+ * Solo sirve para detectar RESPUESTAS: los rebotes no llegan a este hilo (ver listRecentBounces).
+ *
+ * Costo: primero pide solo cabeceras. El cuerpo completo se busca únicamente si esas cabeceras
+ * ya dijeron que es un rebote, así el caso normal (respuesta real o nada) queda liviano.
+ */
+export async function inspectThread(
+  threadId: string,
+): Promise<{ state: ThreadState; reason: string | null }> {
+  const gmail = client();
+  const res = await gmail.users.threads.get({
+    userId: "me",
+    id: threadId,
+    format: "metadata",
+    metadataHeaders: BOUNCE_HEADERS,
+  });
+
+  const messages = res.data.messages ?? [];
+  if (messages.length <= 1) return { state: "sin-respuesta", reason: null };
+
+  const newest = messages[messages.length - 1];
+  const msg: ThreadMessage = { headers: headerMap(newest.payload?.headers ?? undefined) };
+  if (!looksLikeBounce(msg)) return { state: "respuesta", reason: null };
+
+  const full = await gmail.users.messages.get({
+    userId: "me",
+    id: newest.id ?? "",
+    format: "full",
+  });
+  const withBody: ThreadMessage = { ...msg, body: plainTextBody(full.data.payload) };
+  const state = classifyThread(withBody);
+  return { state, reason: state === "rebote-duro" ? bounceReason(withBody) : null };
 }

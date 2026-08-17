@@ -13,6 +13,14 @@ import type { OutreachConfig, Provider } from "@/lib/types";
 
 const REPLY_NOTE_TEXT = "Respuesta detectada — revisar Gmail.";
 
+/** Tasa de rebote acumulada de toda la campaña (histórica, no una ventana móvil). */
+function bounceRateLabel(config: OutreachConfig): string {
+  const sent = config.sentTotal ?? 0;
+  const bounced = config.bouncedTotal ?? 0;
+  if (sent === 0) return "—";
+  return `${((bounced / sent) * 100).toFixed(1)}% (${bounced}/${sent})`;
+}
+
 export default function OutreachPage() {
   const [config, setConfig] = useState<OutreachConfig | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -95,12 +103,33 @@ export default function OutreachPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Motivo de la última pausa automática. No se borra al volver a encender: un enabled:false
+          silencioso es indistinguible de que Nico lo apagó a mano. */}
+      {config.pausedReason && (
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 rounded-card border border-status-overdue/40 bg-status-overdue/10 p-4">
+          <div>
+            <p className="font-eyebrow text-[10px] uppercase tracking-[0.18em] text-status-overdue">
+              Pausa automática
+            </p>
+            <p className="mt-1 text-sm text-ink">{config.pausedReason}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateOutreachConfig({ pausedReason: null })}
+            className="rounded-control border border-line px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:text-ink"
+          >
+            Limpiar aviso
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <MetricCard
           label="Enviados hoy"
           value={`${config.sentToday} / ${config.dailyLimit}`}
           accent
         />
+        <MetricCard label="Tasa de rebote" value={bounceRateLabel(config)} />
         <MetricCard label="Pendientes de envío" value={metrics.pending} />
         <MetricCard label="Contactados (outreach)" value={metrics.contacted} />
         <MetricCard label="Respuestas a revisar" value={metrics.replies} />
