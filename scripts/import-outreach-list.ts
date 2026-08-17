@@ -74,16 +74,64 @@ const ALL_REASONS: IneligibleReason[] = [
 /** Formato del North American Numbering Plan: código de área y central arrancan en [2-9]. */
 const NANP_RE = /^[2-9]\d{2}[2-9]\d{6}$/;
 
+/** Teclado telefónico: ABC→2, DEF→3, ... WXYZ→9. Para los números vanity (1-800-GO-FEDEX). */
+const KEYPAD: Record<string, string> = {};
+for (const [digit, letters] of Object.entries({
+  "2": "ABC",
+  "3": "DEF",
+  "4": "GHI",
+  "5": "JKL",
+  "6": "MNO",
+  "7": "PQRS",
+  "8": "TUV",
+  "9": "WXYZ",
+})) {
+  for (const letter of letters) KEYPAD[letter] = digit;
+}
+
+/**
+ * Separadores de "varios números en un mismo campo": barra, coma, "or", "ext"/"extension", una
+ * "x" que precede dígitos (extensión), o doble espacio. La "x" se chequea después de "ext" para
+ * que "ext 215" no se parta por la x del medio, y solo cuando la siguen dígitos, para no romper
+ * palabras vanity que contienen X (IPOXI).
+ */
+const PHONE_SPLIT_RE = /\s*(?:\/|,|\bor\b|ext(?:ension)?\.?|x(?=\s*\d)|\s{2,})\s*/i;
+
+/**
+ * Las dos lecturas posibles de un fragmento: letras mapeadas al teclado (vanity) y letras
+ * descartadas. Probar las dos evita que un prefijo de texto ("Tel: 908-...") se convierta en
+ * dígitos basura y tumbe un número que en realidad es válido.
+ */
+function phoneReadings(fragment: string): string[] {
+  const upper = fragment.toUpperCase();
+  const vanity = upper
+    .split("")
+    .map((ch) => (/\d/.test(ch) ? ch : (KEYPAD[ch] ?? "")))
+    .join("");
+  const digitsOnly = upper.replace(/\D/g, "");
+  return vanity === digitsOnly ? [digitsOnly] : [vanity, digitsOnly];
+}
+
 /**
  * true si el teléfono contradice el formato US/Canadá. Sin teléfono NO penaliza: el criterio
  * castiga el dato que contradice, no el dato faltante. Atrapa a los fabricantes asiáticos que
  * escriben el código de país sin "+" (86-579-..., 886-4-..., 13901574565).
+ *
+ * El campo se parte en fragmentos y alcanza con que UNO sea NANP válido: en la lista hay vanity
+ * numbers ("888-908-BUGS"), extensiones ("877-311-2287 X101") y dos números en el mismo campo
+ * ("877 864-2201 or 310 952-9000"). Los fragmentos cortos (una extensión suelta) se descartan en
+ * silencio en vez de invalidar al conjunto.
  */
 function isNonNanpPhone(phone: string): boolean {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) return false;
-  const core = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
-  return !NANP_RE.test(core);
+  if (!/\d/.test(phone)) return false;
+  for (const fragment of phone.split(PHONE_SPLIT_RE)) {
+    for (const digits of phoneReadings(fragment)) {
+      if (!digits) continue;
+      const core = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+      if (NANP_RE.test(core)) return false;
+    }
+  }
+  return true;
 }
 
 /** Último label del host: "www.acme.com.cn" → "cn". "" si no se puede determinar. */
