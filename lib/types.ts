@@ -91,6 +91,16 @@ export type OutreachConfig = {
   sentToday: number;
   /** yyyy-mm-dd (America/New_York) del último reset de sentToday. */
   lastResetDate: string;
+  /**
+   * Envíos automáticos acumulados desde siempre. NO es una ventana móvil: la tasa de rebote que
+   * evalúa el cortacircuito es HISTÓRICA sobre toda la campaña. Para 917 envíos alcanza; si algún
+   * día el outreach fuera continuo y de años, habría que pasar a una ventana.
+   */
+  sentTotal?: number;
+  /** Rebotes DUROS acumulados. Los blandos no suman: un buzón lleno no dice nada de la lista. */
+  bouncedTotal?: number;
+  /** Motivo de la última pausa automática. null = nunca pasó, o alguien lo limpió a mano. */
+  pausedReason?: string | null;
 };
 
 export type BlacklistEntry = {

@@ -16,6 +16,9 @@ const DEFAULT_CONFIG: OutreachConfig = {
   enabled: false,
   sentToday: 0,
   lastResetDate: todayNY(),
+  sentTotal: 0,
+  bouncedTotal: 0,
+  pausedReason: null,
 };
 
 export async function getOutreachConfigAdmin(): Promise<OutreachConfig> {
@@ -41,12 +44,29 @@ export async function incrementSentTodayAdmin(): Promise<OutreachConfig> {
   const next = await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref());
     const current = snap.exists ? (snap.data() as OutreachConfig) : DEFAULT_CONFIG;
+    const base = { ...current, sentTotal: (current.sentTotal ?? 0) + 1 };
     const updated: OutreachConfig =
       current.lastResetDate === today
-        ? { ...current, sentToday: current.sentToday + 1 }
-        : { ...current, sentToday: 1, lastResetDate: today };
+        ? { ...base, sentToday: current.sentToday + 1 }
+        : { ...base, sentToday: 1, lastResetDate: today };
     tx.set(ref(), updated);
     return updated;
   });
   return next;
+}
+
+/** Suma 1 a bouncedTotal. Solo se llama con rebotes DUROS (ver Task 14 del plan). */
+export async function recordBounceAdmin(): Promise<OutreachConfig> {
+  return adminDb().runTransaction(async (tx) => {
+    const snap = await tx.get(ref());
+    const current = snap.exists ? (snap.data() as OutreachConfig) : DEFAULT_CONFIG;
+    const updated: OutreachConfig = { ...current, bouncedTotal: (current.bouncedTotal ?? 0) + 1 };
+    tx.set(ref(), updated);
+    return updated;
+  });
+}
+
+/** Pausa el envío dejando constancia del motivo. El motivo no se borra al volver a encender. */
+export async function pauseWithReasonAdmin(reason: string): Promise<void> {
+  await ref().update({ enabled: false, pausedReason: reason });
 }

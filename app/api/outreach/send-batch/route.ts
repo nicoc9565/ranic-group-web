@@ -9,10 +9,17 @@ import { sendOutreachEmail } from "../../../../lib/gmail";
 import {
   getOutreachConfigAdmin,
   incrementSentTodayAdmin,
+  pauseWithReasonAdmin,
 } from "../../../../lib/outreachConfigAdmin";
 import type { Provider } from "../../../../lib/types";
 
 const BATCH_SIZE = 3; // por corrida de cron; el ritmo diario lo marca dailyLimit + frecuencia del cron
+
+// Cortacircuito por tasa de rebote. Una tasa alta es la forma más rápida de arruinar la reputación
+// del dominio, que es lo que todo el diseño gradual intenta proteger: dailyLimit acota el ritmo,
+// pero sin esto el sistema seguiría mandando aunque rebotara media lista.
+const BOUNCE_RATE_LIMIT = 0.05; // 5%: donde los proveedores de correo empiezan a penalizar
+const MIN_SAMPLE = 50; // piso de muestra: con menos, 1 rebote da una tasa que no significa nada
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization");
@@ -25,6 +32,19 @@ export async function POST(req: Request) {
   const dryRun = new URL(req.url).searchParams.get("dryRun") === "1";
 
   const config = await getOutreachConfigAdmin();
+
+  // Cortacircuito: la tasa es HISTÓRICA (sentTotal/bouncedTotal son acumulados desde siempre),
+  // no una ventana móvil. Por debajo de MIN_SAMPLE no se evalúa: los rebotes se registran igual,
+  // pero no cortan.
+  const sentTotal = config.sentTotal ?? 0;
+  const bouncedTotal = config.bouncedTotal ?? 0;
+  const bounceRate = sentTotal > 0 ? bouncedTotal / sentTotal : 0;
+  if (sentTotal >= MIN_SAMPLE && bounceRate > BOUNCE_RATE_LIMIT) {
+    const reason = `Pausado automáticamente: tasa de rebote ${(bounceRate * 100).toFixed(1)}% (${bouncedTotal} de ${sentTotal})`;
+    if (!dryRun && config.enabled) await pauseWithReasonAdmin(reason);
+    return NextResponse.json({ sent: 0, candidates: 0, reason });
+  }
+
   if (!config.enabled && !dryRun) {
     return NextResponse.json({ sent: 0, reason: "outreach pausado" });
   }
