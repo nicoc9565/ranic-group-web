@@ -1271,27 +1271,34 @@ git commit -m "feat: opt-out manual + panel /admin/outreach (control de envío g
 
 ### Task 14: Clasificación de rebotes + cortacircuito por tasa de rebote
 
-**Por qué:** hoy no es que falte el manejo de rebotes — es que los rebotes entran al CRM como si
-fueran interés del proveedor. Gmail entrega el aviso de `mailer-daemon@googlemail.com` **dentro del
-hilo original**, así que `hasNewReply()` devuelve `true` y la Task 12 le escribe "Respuesta
-detectada — revisar Gmail." a un proveedor cuyo mail nunca llegó a destino. Con 917 envíos eso
-llena la métrica "Respuestas a revisar" de hilos muertos.
+> **Corrección de la premisa original (2026-08-17, tras la prueba con un rebote real).** Esta task
+> se escribió afirmando que los rebotes entraban al CRM como interés del proveedor, porque Gmail
+> entregaría el aviso de `mailer-daemon` *dentro del hilo original* y `hasNewReply()` devolvería
+> `true`. **Eso es falso.** Se mandó a propósito a `noexiste@ranicgroup.com` y el DSN llegó en un
+> hilo **distinto** (`1a011835f8a4084b`) del envío (`1a0118359093412c`), que quedó con un solo
+> mensaje. O sea que los rebotes nunca contaminaron la detección de respuestas.
+>
+> La primera implementación de esta task, que inspeccionaba el hilo del envío, era **inerte**: no
+> podía detectar un solo rebote, y tenía 89 tests en verde. La detección tiene que partir del
+> buzón, no del hilo.
+
+**Por qué:** no hay ningún manejo de rebotes. Cuando mandemos a los 917, una parte va a rebotar
+—direcciones de una lista de feria, muchas de hace meses— y hoy eso es **invisible**: el aviso
+queda en la casilla de Nico sin que nadie lo lea ni lo registre, y el proveedor queda en
+"Contactado" para siempre aunque el mail nunca haya llegado a nadie. Ensucia los datos, y peor: el
+Follow-up Track le va a pedir a Nico que insista los días 4, 7 y 12 contra casillas muertas.
 
 La segunda mitad es de reputación: una tasa de rebote alta es la forma más rápida de arruinar el
 dominio, que es lo que todo el diseño gradual intenta proteger. `dailyLimit` acota el ritmo, pero
 si el 30% de la lista rebota el sistema sigue mandando hasta que alguien lo note a mano.
 
-**Latencia de detección — cómo se comporta:** `check-replies` rota `BATCH_SIZE` (50) por corrida,
-una vez por hora. El ciclo completo depende de cuántos proveedores estén en "Contactado":
-
-- **Al principio de la campaña** (20-50 contactados) una sola corrida los cubre a todos: la
-  detección es prácticamente inmediata. Es exactamente la ventana donde una lista mala tiene que
-  hacernos frenar.
-- **Al final** (917 contactados) el ciclo completo son ~19 horas.
-
-O sea que el cortacircuito es más rápido justo cuando más importa, y se degrada recién cuando ya
-se mandó casi todo. Si algún día hiciera falta acortarlo, la palanca es subir `BATCH_SIZE` o
-correr el workflow más seguido — no cambiar el diseño.
+**Latencia de detección:** no hay. Con el mecanismo correcto —recuperar los DSN del buzón por
+consulta, no rotar hilos— cada corrida procesa **todos** los rebotes de la ventana, haya 20
+contactados o 917. La versión anterior de este plan advertía un ciclo de ~19 horas al final de la
+campaña; esa limitación era consecuencia de la rotación por `replyCheckedAt`, y desaparece con el
+cambio de mecanismo. La detección de **respuestas** sigue rotando y sigue teniendo ese ciclo, pero
+ahí no importa: una respuesta que se lee unas horas más tarde no le hace daño a nadie, y un rebote
+sin detectar sí.
 
 **Files:**
 - Modify: `lib/gmail.ts` (`hasNewReply` → `inspectThread`)
@@ -1303,30 +1310,65 @@ correr el workflow más seguido — no cambiar el diseño.
 - Create: `lib/__tests__/bounceClassification.test.ts`
 
 **Interfaces:**
-- Produces: `inspectThread(threadId): Promise<ThreadState>` con
-  `ThreadState = "sin-respuesta" | "respuesta" | "rebote-duro" | "rebote-blando"` — reemplaza a
-  `hasNewReply`, que deja de existir.
+- Produces: `listRecentBounces(days): Promise<Bounce[]>` con
+  `Bounce = { messageId, recipient, state, reason, receivedAt }` — recupera los DSN del buzón.
+- Produces: `inspectThread(threadId): Promise<{ state, reason }>` — sigue existiendo para la
+  detección de **respuestas**; reemplaza a `hasNewReply`, que deja de existir.
 
-- [ ] **Step 1: Criterio de clasificación**
+- [ ] **Step 1: Recuperación de los DSN — sobre-capturar y dejar que la clasificación filtre**
 
-Sobre el mensaje más nuevo del hilo (los posteriores al que mandamos), tres señales, de más a
-menos confiable:
+**La consulta NO puede ser `from:mailer-daemon`.** Ese es cómo rebota Google; cuando el
+destinatario está en Outlook, en un servidor corporativo o en cualquier MTA que no sea Google, el
+DSN llega de `postmaster@`, de `MAILER-DAEMON@<dominio-remoto>` o con remitente nulo. Con 917
+destinatarios en dominios ajenos, **la mayoría de los rebotes reales no vienen de
+`mailer-daemon`**. La prueba del 2026-08-17 fue interna al dominio, que es justo el único caso
+donde esa consulta acierta — otra forma en que una prueba puede pasar por la razón equivocada.
 
-1. `Content-Type: multipart/report; report-type=delivery-status` — formato estándar de
-   notificación de entrega (RFC 3464). Señal fuerte.
-2. `From:` es `mailer-daemon@googlemail.com` o `postmaster@` — corrobora.
-3. Cabecera `X-Failed-Recipients` — Gmail la pone en sus rebotes.
+La regla: **la recuperación sobre-captura, la clasificación filtra.** Traer un conjunto amplio
+—remitentes tipo daemon/postmaster **más** asuntos típicos (`undeliverable`, `delivery status
+notification`, `returned mail`, `failure notice`)— y que `classifyThread` decida. Ya es una
+función pura y ya sabe decir que no. Un falso positivo en la consulta no cuesta nada; un falso
+negativo es un rebote que nunca detectamos.
 
-**No usar el asunto** ("Delivery Status Notification (Failure)"): depende del idioma de la cuenta y
-se rompe el día que alguien cambie la configuración.
+Nota: que el asunto entre en la **consulta** no contradice la regla de no clasificar por asunto.
+Son dos capas distintas: la consulta amplía el candidato, la clasificación decide. El test de un
+mail humano con asunto `"Re: Delivery Status Notification (Failure)"` clasificado como respuesta
+sigue valiendo y ahora cubre exactamente este camino.
 
-**Duro vs blando:** el cuerpo del reporte trae `Status: 5.x.x` (permanente, la casilla no existe) o
-`4.x.x` (transitorio, buzón lleno o servidor caído). Sin línea `Status:` legible → tratar como
-blando (conservador: no condenar una dirección por un formato que no supimos leer).
+**Ventana: 4 días.** Los rebotes duros llegan en segundos, pero los blandos llegan cuando el MTA
+remoto se rinde después de reintentar, típicamente entre 3 y 5 días. Con 2 días se perdían casi
+todos. La idempotencia por `alreadyNoted` ya cubre el reprocesamiento, así que ampliar la ventana
+solo cuesta unas consultas por hora.
 
-**Costo:** pedir el hilo con `format: "metadata"` limitado a las cabeceras necesarias; solo si esas
-cabeceras dicen "esto es un rebote", hacer un `messages.get(format: "full")` para leer el `Status:`.
-Así el caso normal —respuesta real o nada— sigue costando una llamada liviana.
+- [ ] **Step 2: Criterio de clasificación** (sin cambios respecto de lo ya implementado)
+
+1. **Señal primaria:** `Content-Type: multipart/report; report-type=delivery-status` (RFC 3464) o
+   la cabecera `X-Failed-Recipients`. Son estructurales del rebote; ningún mail legítimo las trae.
+2. **Corroboración, nunca suficiente sola:** `From` tipo `mailer-daemon@` / `postmaster@`. Para
+   contar como rebote necesita además un código DSN en el cuerpo. Apoyarse en el `From` haría que
+   esto funcione contra Google y falle contra cualquier otro MTA — y al revés, un proveedor que
+   escribe de verdad desde `postmaster@suempresa.com` no es un rebote.
+3. **Nunca el asunto** como criterio de clasificación: depende del idioma de la cuenta y un humano
+   puede responder citándolo.
+
+**Duro vs blando:** el cuerpo trae `Status: 5.x.x` (permanente) o `4.x.x` (transitorio). Sin línea
+`Status:` legible → blando. La asimetría es deliberada: marcar duro de más apaga el envío y el
+follow-up de un proveedor que quizás está vivo; marcar blando de más solo deja una nota.
+
+- [ ] **Step 3: Correlación del DSN con el proveedor**
+
+Por `X-Failed-Recipients` (o el `Final-Recipient` del reporte) contra `Provider.email`. Tres
+guardas, todas necesarias:
+
+1. `status == "Contactado"` y `source == "expo-outreach-import"` — no tocar proveedores que Nico
+   gestiona a mano.
+2. El proveedor tiene `sendAttemptedAt` — le mandamos nosotros.
+3. **La fecha del DSN es posterior a `sendAttemptedAt`.** Sin esta guarda temporal, un rebote de
+   un mail que Nico mandó a mano hace tres días entra en la ventana y mata retroactivamente a un
+   proveedor al que le escribimos hoy y que tal vez recibió bien.
+
+Si un DSN correlaciona con **varios** proveedores, se marcan todos: si la casilla está muerta, lo
+está para los dos. Eso es correcto, no es una pérdida de precisión.
 
 - [ ] **Step 2: Qué se escribe en cada caso**
 
@@ -1364,7 +1406,10 @@ pausedReason: string | null;
 ```
 
 `sentTotal` se incrementa en la misma transacción que `sentToday` (`incrementSentTodayAdmin`).
-`bouncedTotal` se incrementa desde `check-replies` con un `recordBounceAdmin()` transaccional.
+`bouncedTotal` se incrementa desde `check-replies` con un `recordBounceAdmin()` transaccional,
+**una vez por DSN, no una vez por proveedor correlacionado**. Si un DSN matchea dos proveedores,
+los dos se marcan pero el contador sube 1: si no, la tasa se distorsiona hacia arriba justo cuando
+el cortacircuito la está mirando.
 
 - [ ] **Step 4: Cortacircuito en `send-batch`**
 
@@ -1396,12 +1441,20 @@ rebote sin línea `Status:` legible → blando.
 
 - [ ] **Step 7: Verificación contra un rebote real**
 
-`0-test-ronda-1` fue a una dirección de mail-tester que ya caducó: mandarle de nuevo produce un
-rebote duro auténtico de Gmail, contra el formato real y no contra un fixture inventado. Usar el
-mismo runbook (`scripts/outreach-test-send.ts`) con el gate completo, y **confirmar con Nico antes
-de disparar**. Después: `check-replies` y verificar que el proveedor quedó con `sendError`,
-`outreachEligible: false`, `followUpStopped: true` y la nota de rebote — y **sin** la nota de
-respuesta detectada.
+El rebote ya existe: el envío a `noexiste@ranicgroup.com` del 2026-08-17 dejó un DSN auténtico de
+Gmail en el buzón, y `0-test-rebote` quedó en "Contactado" esperándolo. **No hace falta mandar
+nada nuevo**: una corrida de `check-replies` con el mecanismo corregido tiene que levantarlo. Es la
+mejor verificación posible, porque el rebote es anterior al código y no puede haberse acomodado a él.
+
+Esperado: `hardBounces: 1`, y el proveedor con `sendError`, `outreachEligible: false`,
+`followUpStopped: true` y la nota de rebote — y **sin** la nota de respuesta detectada.
+
+Recién cuando eso dé verde: contadores a 0 (`reset-totals`) y PR.
+
+**Nota metodológica, para lo que venga:** la primera implementación de esta task tenía 89 tests en
+verde y no podía detectar un solo rebote. Los tests validaban la clasificación, que estaba bien;
+lo que estaba mal era el supuesto sobre de dónde sale el mensaje, y ningún test unitario iba a
+encontrarlo. Por eso la verificación va contra Gmail real y no contra un fixture.
 
 - [ ] **Step 8: Commit**
 

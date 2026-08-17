@@ -9,7 +9,7 @@
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "../../../../lib/firebaseAdmin";
-import { inspectThread } from "../../../../lib/gmail";
+import { inspectThread, listRecentBounces } from "../../../../lib/gmail";
 import { recordBounceAdmin } from "../../../../lib/outreachConfigAdmin";
 import type { NoteEntry, Provider } from "../../../../lib/types";
 
@@ -17,6 +17,9 @@ const REPLY_NOTE_TEXT = "Respuesta detectada — revisar Gmail.";
 const HARD_BOUNCE_NOTE = "Rebote duro — la dirección no existe.";
 const SOFT_BOUNCE_NOTE = "Rebote transitorio — puede reintentarse.";
 const BATCH_SIZE = 50;
+// Los rebotes duros llegan en segundos, pero los blandos llegan cuando el MTA remoto se rinde
+// después de reintentar: típicamente 3 a 5 días. Con una ventana de 2 se perdían casi todos.
+const BOUNCE_WINDOW_DAYS = 4;
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization");
@@ -53,31 +56,70 @@ export async function POST(req: Request) {
     const alreadyNoted = (text: string) => notes.some((n) => n.text === text);
     const note = (text: string): NoteEntry => ({ date: today, text });
 
-    const { state, reason } = await inspectThread(p.gmailThreadId);
+    const { state } = await inspectThread(p.gmailThreadId);
 
     if (state === "respuesta" && !alreadyNoted(REPLY_NOTE_TEXT)) {
       patch.notes = FieldValue.arrayUnion(note(REPLY_NOTE_TEXT));
       patch.updatedAt = now;
       flagged++;
-    } else if (state === "rebote-duro" && !alreadyNoted(HARD_BOUNCE_NOTE)) {
-      // La dirección no existe: fuera del envío automático y fuera del Follow-up Track, que si no
-      // le pediría a Nico insistir los días 4, 7 y 12 contra una casilla muerta.
-      patch.notes = FieldValue.arrayUnion(note(HARD_BOUNCE_NOTE));
-      patch.sendError = reason ?? "Rebote duro";
-      patch.outreachEligible = false;
-      patch.followUpStopped = true;
-      patch.updatedAt = now;
-      await recordBounceAdmin();
-      hardBounces++;
-    } else if (state === "rebote-blando" && !alreadyNoted(SOFT_BOUNCE_NOTE)) {
-      // Transitorio (buzón lleno, servidor caído): se anota y nada más. No dice nada de la
-      // calidad de la lista, así que tampoco suma a la tasa de rebote.
-      patch.notes = FieldValue.arrayUnion(note(SOFT_BOUNCE_NOTE));
-      patch.updatedAt = now;
-      softBounces++;
     }
 
     await adminDb().collection("providers").doc(p.id).update(patch);
+  }
+
+  // ── Segunda mitad: rebotes ────────────────────────────────────────────────
+  // Independiente de la rotación de arriba. Los DSN no llegan al hilo del envío, así que se
+  // recuperan del buzón y se correlacionan por la dirección que falló.
+  const bounces = await listRecentBounces(BOUNCE_WINDOW_DAYS);
+  const today = new Date().toISOString().slice(0, 10);
+
+  for (const bounce of bounces) {
+    const matches = await adminDb()
+      .collection("providers")
+      .where("email", "==", bounce.recipient)
+      .where("status", "==", "Contactado")
+      .where("source", "==", "expo-outreach-import")
+      .get();
+
+    let countedThisBounce = false;
+
+    for (const d of matches.docs) {
+      const p = { id: d.id, ...(d.data() as Omit<Provider, "id">) };
+
+      // Guarda temporal: sin esto, un rebote de un mail que Nico mandó a mano hace días mataría
+      // retroactivamente a un proveedor al que le escribimos hoy y que tal vez recibió bien.
+      if (p.sendAttemptedAt == null || bounce.receivedAt <= p.sendAttemptedAt) continue;
+
+      const noteText = bounce.state === "rebote-duro" ? HARD_BOUNCE_NOTE : SOFT_BOUNCE_NOTE;
+      if ((p.notes ?? []).some((n) => n.text === noteText)) continue;
+
+      const now = Date.now();
+      const patch: Record<string, unknown> = {
+        notes: FieldValue.arrayUnion({ date: today, text: noteText } as NoteEntry),
+        updatedAt: now,
+      };
+
+      if (bounce.state === "rebote-duro") {
+        // La dirección no existe: fuera del envío automático y fuera del Follow-up Track, que si
+        // no le pediría a Nico insistir los días 4, 7 y 12 contra una casilla muerta.
+        patch.sendError = bounce.reason;
+        patch.outreachEligible = false;
+        patch.followUpStopped = true;
+        hardBounces++;
+        // El contador sube una vez por DSN, no por proveedor: si un DSN matchea dos, la tasa se
+        // distorsionaría hacia arriba justo cuando el cortacircuito la está mirando.
+        if (!countedThisBounce) {
+          await recordBounceAdmin();
+          countedThisBounce = true;
+        }
+      } else {
+        // Transitorio (buzón lleno, servidor caído): se anota y nada más. No dice nada de la
+        // calidad de la lista, así que tampoco suma a la tasa de rebote.
+        softBounces++;
+      }
+
+      await adminDb().collection("providers").doc(p.id).update(patch);
+    }
   }
 
   return NextResponse.json({
@@ -85,5 +127,6 @@ export async function POST(req: Request) {
     hardBounces,
     softBounces,
     checked: snap.docs.length,
+    bouncesInWindow: bounces.length,
   });
 }
