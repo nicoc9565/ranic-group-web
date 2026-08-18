@@ -61,7 +61,11 @@ export type Provider = {
   /** Motivo de un envío automático fallido (bounce, dirección inválida, etc.). null si no falló. */
   sendError?: string | null;
   /** Origen del proveedor, para auditoría. Ausente = cargado a mano antes de esta feature. */
-  source?: "expo-outreach-import" | "csv-import" | "manual";
+  source?:
+    | "expo-outreach-import"
+    | "expo-west-import"
+    | "csv-import"
+    | "manual";
   /** true = el proveedor pidió no recibir más emails. Se excluye de cualquier envío automático. */
   optedOut?: boolean;
   /**
