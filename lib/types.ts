@@ -80,6 +80,20 @@ export type Provider = {
    * orderBy los docs que no tienen el campo, así que sin ese 0 el proveedor nunca se chequearía.
    */
   replyCheckedAt?: number;
+  /**
+   * Timestamp de la respuesta detectada por el cron. null = todavía no respondió.
+   * Reemplaza el match por string contra las notas, que era frágil: cualquier retoque al texto
+   * de la nota rompía silenciosamente el conteo de respuestas del panel.
+   */
+  replyDetectedAt?: number | null;
+  /**
+   * Clasificación del rebote (ver lib/bounceClassification.ts). Un "hard" no se degrada nunca
+   * a "soft": la dirección no existe, y que un reintento posterior dé un error transitorio no
+   * la resucita.
+   */
+  bounceType?: "hard" | "soft" | null;
+  /** company.toLowerCase(), para búsqueda y orden sin traerse el documento entero a memoria. */
+  companyLower?: string;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
