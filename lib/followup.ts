@@ -19,6 +19,15 @@ function toDayStr(d: Date): string {
 export function nextFollowUpDate(p: Provider): Date | null {
   // Seguimiento detenido manualmente: no hay próximo follow-up (sale de Follow-ups/Dashboard).
   if (p.followUpStopped) return null;
+  // El outreach frío no entra a la secuencia manual: son ~900 proveedores importados de una feria,
+  // a los que nunca les escribimos a mano. send-batch llama a advanceFollowUp() en cada envío, así
+  // que sin este guard cada contacto automático genera una tarjeta pidiendo acción humana cuatro
+  // días después: ~20 por día hasta inundar la pantalla y volverla inservible.
+  // Si uno responde aparece en "Requieren tu atención" del Dashboard, que es la señal que importa.
+  // Nico lo mete a la secuencia a mano con "Iniciar seguimiento" (followUpForced), que ya existe.
+  const isColdOutreach =
+    p.source === "expo-outreach-import" || p.source === "expo-west-import";
+  if (isColdOutreach && !p.followUpForced) return null;
   // El Follow-up Track asume una secuencia de emails que Nico controla. Si el contacto fue
   // por Web o Llamada, no hay secuencia corriendo → no se calcula follow-up (spec §4),
   // salvo que Nico fuerce el tracking manualmente (followUpForced).

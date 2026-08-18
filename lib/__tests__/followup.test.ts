@@ -69,6 +69,48 @@ describe("nextFollowUpDate", () => {
       nextFollowUpDate({ ...base, contactMethod: "Web" } as Provider),
     ).toBeNull();
   });
+  test("outreach frio (expo-outreach-import) sin followUpForced -> null", () => {
+    expect(
+      nextFollowUpDate({ ...base, source: "expo-outreach-import" } as Provider),
+    ).toBeNull();
+  });
+  test("outreach frio (expo-west-import) sin followUpForced -> null", () => {
+    expect(
+      nextFollowUpDate({ ...base, source: "expo-west-import" } as Provider),
+    ).toBeNull();
+  });
+  test("outreach frio con followUpForced -> fecha normal (Nico lo metio a mano)", () => {
+    expect(
+      nextFollowUpDate({
+        ...base,
+        source: "expo-outreach-import",
+        followUpForced: true,
+      } as Provider)
+        ?.toISOString()
+        .slice(0, 10),
+    ).toBe("2026-06-05");
+  });
+  test("proveedor manual sin source -> comportamiento actual intacto", () => {
+    expect(nextFollowUpDate(base)?.toISOString().slice(0, 10)).toBe("2026-06-05");
+  });
+  test("source manual explicito -> tampoco queda afuera", () => {
+    expect(
+      nextFollowUpDate({ ...base, source: "manual" } as Provider)
+        ?.toISOString()
+        .slice(0, 10),
+    ).toBe("2026-06-05");
+  });
+});
+
+describe("followUpStatus con outreach frio", () => {
+  test("un proveedor de la campana vencido hace dias sigue siendo none", () => {
+    expect(
+      followUpStatus(
+        { ...base, source: "expo-outreach-import" } as Provider,
+        new Date("2026-07-01"),
+      ),
+    ).toBe("none");
+  });
 });
 
 describe("followUpStatus", () => {
