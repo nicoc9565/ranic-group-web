@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { MetricCard } from "@/components/MetricCard";
 import { PageHeader } from "@/components/PageHeader";
 import { formatDate } from "@/lib/format";
@@ -8,10 +8,13 @@ import {
   subscribeOutreachConfig,
   updateOutreachConfig,
 } from "@/lib/outreachConfig";
-import { subscribeProviders } from "@/lib/providers";
+import {
+  fetchExcluded,
+  fetchFailedSends,
+  fetchOutreachStats,
+  type OutreachStats,
+} from "@/lib/outreachStats";
 import type { OutreachConfig, Provider } from "@/lib/types";
-
-const REPLY_NOTE_TEXT = "Respuesta detectada — revisar Gmail.";
 
 /** Tasa de rebote acumulada de toda la campaña (histórica, no una ventana móvil). */
 function bounceRateLabel(config: OutreachConfig): string {
@@ -23,7 +26,9 @@ function bounceRateLabel(config: OutreachConfig): string {
 
 export default function OutreachPage() {
   const [config, setConfig] = useState<OutreachConfig | null>(null);
-  const [providers, setProviders] = useState<Provider[]>([]);
+  const [stats, setStats] = useState<OutreachStats | null>(null);
+  const [failed, setFailed] = useState<Provider[]>([]);
+  const [excluded, setExcluded] = useState<Provider[]>([]);
   const [limitDraft, setLimitDraft] = useState("");
 
   useEffect(
@@ -35,35 +40,25 @@ export default function OutreachPage() {
     [],
   );
 
-  useEffect(() => subscribeProviders(setProviders), []);
-
-  const outreach = useMemo(
-    () => providers.filter((p) => p.source === "expo-outreach-import"),
-    [providers],
-  );
-
-  const metrics = useMemo(() => {
-    const eligible = outreach.filter((p) => p.outreachEligible);
-    return {
-      eligible: eligible.length,
-      pending: eligible.filter(
-        (p) => p.status === "Por Contactar" && !p.optedOut && p.sendAttemptedAt == null,
-      ).length,
-      contacted: outreach.filter((p) => p.status !== "Por Contactar").length,
-      replies: outreach.filter(
-        (p) => p.status === "Contactado" && p.notes.some((n) => n.text === REPLY_NOTE_TEXT),
-      ).length,
+  // Lecturas puntuales al montar, no una suscripción: esta pantalla bajaba los 2502 documentos
+  // de providers en cada visita para mostrar cuatro números y dos tablas de 20 filas.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [s, f, e] = await Promise.all([
+        fetchOutreachStats(),
+        fetchFailedSends(),
+        fetchExcluded(),
+      ]);
+      if (cancelled) return;
+      setStats(s);
+      setFailed(f);
+      setExcluded(e);
+    })();
+    return () => {
+      cancelled = true;
     };
-  }, [outreach]);
-
-  const failed = useMemo(
-    () =>
-      outreach
-        .filter((p) => p.sendError)
-        .sort((a, b) => (b.sendAttemptedAt ?? 0) - (a.sendAttemptedAt ?? 0))
-        .slice(0, 20),
-    [outreach],
-  );
+  }, []);
 
   async function saveLimit() {
     const value = Number(limitDraft);
@@ -130,9 +125,9 @@ export default function OutreachPage() {
           accent
         />
         <MetricCard label="Tasa de rebote" value={bounceRateLabel(config)} />
-        <MetricCard label="Pendientes de envío" value={metrics.pending} />
-        <MetricCard label="Contactados (outreach)" value={metrics.contacted} />
-        <MetricCard label="Respuestas a revisar" value={metrics.replies} />
+        <MetricCard label="Pendientes de envío" value={stats?.pending ?? "—"} />
+        <MetricCard label="Contactados (outreach)" value={stats?.contacted ?? "—"} />
+        <MetricCard label="Respuestas a revisar" value={stats?.replies ?? "—"} />
       </div>
 
       {/* Controles */}
@@ -181,41 +176,78 @@ export default function OutreachPage() {
         </div>
 
         <p className="mt-4 text-xs text-ink-soft">
-          Universo elegible: <span className="font-mono text-ink">{metrics.eligible}</span>{" "}
+          Universo elegible: <span className="font-mono text-ink">{stats?.eligible ?? "—"}</span>{" "}
           proveedores importados que pasaron el filtro de elegibilidad.
         </p>
       </div>
 
-      {/* Envíos fallidos */}
-      <div className="mt-6">
-        <p className="font-eyebrow text-[10px] uppercase tracking-[0.18em] text-ink-soft">
-          Últimos envíos fallidos
-        </p>
-        {failed.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-soft">Sin errores de envío.</p>
-        ) : (
-          <div className="mt-2 overflow-x-auto rounded-card border border-line">
-            <table className="min-w-full text-sm">
-              <thead className="bg-stone/50 text-left">
-                <tr>
-                  <th className="px-3 py-2 font-medium text-ink-soft">Empresa</th>
-                  <th className="px-3 py-2 font-medium text-ink-soft">Email</th>
-                  <th className="px-3 py-2 font-medium text-ink-soft">Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {failed.map((p) => (
-                  <tr key={p.id} className="border-t border-line">
-                    <td className="px-3 py-2 text-ink">{p.company}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-ink-soft">{p.email}</td>
-                    <td className="px-3 py-2 text-xs text-status-overdue">{p.sendError}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Dos tablas, no una. Un envío que falló y una exclusión previa son lo contrario una de
+          la otra: mezcladas, el único fallo real quedaba sepultado abajo de catorce no-fallos. */}
+      <ProviderIssueTable
+        title="Envíos fallidos"
+        empty="Sin errores de envío."
+        emptyDetail="Acá aparecen los intentos que el servidor remoto rechazó."
+        rows={failed}
+        reason={(p) => p.sendError ?? ""}
+      />
+
+      <ProviderIssueTable
+        title="Excluidos antes de enviar"
+        empty="Sin exclusiones."
+        emptyDetail="Acá aparecen los que quedaron fuera sin haberse intentado nunca."
+        rows={excluded}
+        reason={(p) => p.excludedReason ?? ""}
+      />
+
     </>
+  );
+}
+
+function ProviderIssueTable({
+  title,
+  empty,
+  emptyDetail,
+  rows,
+  reason,
+}: {
+  title: string;
+  empty: string;
+  emptyDetail: string;
+  rows: Provider[];
+  reason: (p: Provider) => string;
+}) {
+  return (
+    <div className="mt-6">
+      <p className="font-eyebrow text-[10px] uppercase tracking-[0.18em] text-ink-soft">
+        {title}
+      </p>
+      {rows.length === 0 ? (
+        <>
+          <p className="mt-2 text-sm text-ink-soft">{empty}</p>
+          <p className="text-xs text-ink-soft">{emptyDetail}</p>
+        </>
+      ) : (
+        <div className="mt-2 overflow-x-auto rounded-card border border-line">
+          <table className="min-w-full text-sm">
+            <thead className="bg-stone/50 text-left">
+              <tr>
+                <th className="px-3 py-2 font-medium text-ink-soft">Empresa</th>
+                <th className="px-3 py-2 font-medium text-ink-soft">Email</th>
+                <th className="px-3 py-2 font-medium text-ink-soft">Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((p) => (
+                <tr key={p.id} className="border-t border-line">
+                  <td className="px-3 py-2 text-ink">{p.company}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-ink-soft">{p.email}</td>
+                  <td className="px-3 py-2 text-xs text-status-overdue">{reason(p)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
