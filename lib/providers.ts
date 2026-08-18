@@ -90,6 +90,28 @@ export async function countProvidersByStatus(statuses: Status[]): Promise<number
   return snap.data().count;
 }
 
+/**
+ * Contactados POR EL PROGRAMA: los que el envío automático intentó mandar.
+ *
+ * Es distinto de "contactados en total", que incluye a los que Nico contactó a mano hace meses.
+ * Estaban bajo la misma etiqueta y daba 13 con la campaña sin haber mandado un solo email: 3
+ * documentos de prueba más ~10 manuales. Medía bien, decía otra cosa.
+ */
+export async function countAutoContacted(): Promise<number> {
+  const snap = await getCountFromServer(
+    query(providersCol(), where("sendAttemptedAt", ">", 0)),
+  );
+  return snap.data().count;
+}
+
+/** Contactados en total: cualquiera que haya salido de "Por Contactar", a mano o por el programa. */
+export async function countEverContacted(): Promise<number> {
+  const snap = await getCountFromServer(
+    query(providersCol(), where("status", "!=", "Por Contactar")),
+  );
+  return snap.data().count;
+}
+
 const ATTENTION_LIMIT = 50;
 
 function toProviders(docs: { id: string; data: () => unknown }[]): Provider[] {

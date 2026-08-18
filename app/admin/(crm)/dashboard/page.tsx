@@ -10,7 +10,8 @@ import { TaskList } from "@/components/TaskList";
 import { followUpStatus, nextFollowUpDate } from "@/lib/followup";
 import { formatDate } from "@/lib/format";
 import {
-  countProviders,
+  countAutoContacted,
+  countEverContacted,
   countProvidersByStatus,
   fetchFollowUpCandidates,
   fetchHardBouncedProviders,
@@ -37,7 +38,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoaded, setTasksLoaded] = useState(false);
   const [counts, setCounts] = useState<{
-    total: number;
+    autoContactados: number;
     contactados: number;
     cuenta: number;
   } | null>(null);
@@ -62,10 +63,10 @@ export default function DashboardPage() {
     let cancelled = false;
 
     (async () => {
-      const [total, contactados, cuenta, replied, bounced, candidates] =
+      const [autoContactados, contactados, cuenta, replied, bounced, candidates] =
         await Promise.all([
-          countProviders(),
-          countProvidersByStatus(["Contactado"]),
+          countAutoContacted(),
+          countEverContacted(),
           countProvidersByStatus(ACCOUNT_STATUSES),
           fetchRepliedProviders(),
           fetchHardBouncedProviders(),
@@ -93,7 +94,7 @@ export default function DashboardPage() {
           );
         });
 
-      setCounts({ total, contactados, cuenta });
+      setCounts({ autoContactados, contactados, cuenta });
       setAttention({ replies, bounces, followUps });
       setLoaded(true);
     })();
@@ -112,8 +113,11 @@ export default function DashboardPage() {
 
       {/* Métricas */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <MetricCard label="Proveedores" value={counts?.total ?? "—"} />
-        <MetricCard label="Contactados" value={counts?.contactados ?? "—"} />
+        <MetricCard
+          label="Contactados por el programa"
+          value={counts?.autoContactados ?? "—"}
+        />
+        <MetricCard label="Contactados en total" value={counts?.contactados ?? "—"} />
         <MetricCard
           label="Respuestas sin revisar"
           value={loaded ? attention.replies.length : "—"}
