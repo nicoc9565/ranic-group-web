@@ -60,7 +60,14 @@ export type Provider = {
   sendAttemptedAt?: number | null;
   /** Motivo de un envío automático fallido (bounce, dirección inválida, etc.). null si no falló. */
   sendError?: string | null;
-  /** Origen del proveedor, para auditoría. Ausente = cargado a mano antes de esta feature. */
+  /**
+   * Origen del proveedor, para auditoría.
+   *
+   * "expo-west-import" quedó SIN USO: los 112 prospectos de expoProspects no tenían una sola
+   * dirección de email, así que se descartó migrarlos. Se deja igual porque el guard de outreach
+   * frío en lib/followup.ts ya lo contempla y sacarlo obliga a volver a tocar esa función para
+   * nada. Si algún día aparecen los contactos, el valor está listo.
+   */
   source?:
     | "expo-outreach-import"
     | "expo-west-import"
@@ -126,6 +133,12 @@ export type BlacklistEntry = {
   name: string;
 };
 
+/**
+ * Prospectos de Expo West. La pantalla, lib/expo.ts y el importador se borraron: la colección
+ * entera venía sin emails y sin websites, así que migrarlos a `providers` solo habría agregado
+ * 112 filas incontactables. La colección `expoProspects` sigue INTACTA en Firestore como
+ * respaldo, y este tipo es lo único que queda documentando su forma.
+ */
 export type ExpoProspect = {
   id: string;
   company: string;

@@ -194,38 +194,38 @@ borrar `app/admin/(crm)/follow-ups/`
   como `"Ace"` marcaría media lista. Exigir coincidencia exacta para nombres de menos de 4
   caracteres. Con la blacklist volviéndose escribible, esto pasa de teórico a probable.
 
-### Task 8 — Expo West migra a Proveedores y entra al envío automático
+### Task 8 — Expo West se borra (los prospectos se descartan)
 
-**Archivos:** `lib/outreachEligibility.ts` (nuevo), `scripts/import-outreach-list.ts`,
-`scripts/migrate-expo-to-providers.ts` (nuevo), `app/api/outreach/send-batch/route.ts`,
-borrar `app/admin/(crm)/expo-west/`, `lib/expo.ts`, `scripts/import-expo.ts`
+**Archivos:** borrar `app/admin/(crm)/expo-west/`, `lib/expo.ts`, `scripts/import-expo.ts`
 
-1. **Extraer la heurística de elegibilidad** de `scripts/import-outreach-list.ts` (líneas ~36-95:
-   `NON_US_TLDS`, `NON_US_WEBMAIL`, `NANP_RE`, el teclado vanity y la función que devuelve las
-   razones) a `lib/outreachEligibility.ts`, puro y con tests. El import existente pasa a usarlo.
-   Sin esto la migración duplicaría la lógica.
-2. **`scripts/migrate-expo-to-providers.ts`** (`--dry-run` primero), leyendo `expoProspects`:
-   - `company`, `email`, `website`; `address` = `city, state`; `contact` = `""`.
-   - `category`: mapa Expo → `Category` (`Cosmetics & Personal Care` → `Fragancias & Beauty`,
-     `Pet Products` → `Pet Products`, `Home Products` → `Home Products`, resto →
-     `General Merchandise`).
-   - `contactMethod`: `"Email"` si hay email, si no `"Web"`.
-   - `status`: `mailSent ? "Contactado" : "Por Contactar"`; `firstContactDate = dateSent`;
-     `followUpStep = mailSent ? 0 : -1`.
-   - `source: "expo-west-import"`, `optedOut: false`, `blacklisted: false`, `score: 0`,
-     `sendAttemptedAt: null`, `outreachEligible` calculado con `lib/outreachEligibility.ts`.
-   - `notes`: una entrada con `brands`, `response` y `notes` del prospecto, para no perder datos.
-   - **Dedupe** contra `providers` por slug del nombre y por email; contra `blacklist` por nombre.
-     Reportar cuántos se saltearon y por qué.
-3. **`send-batch`**: cambiar `.where("source", "==", "expo-outreach-import")` por
-   `.where("source", "in", ["expo-outreach-import", "expo-west-import"])`. Verificar con
-   `?dryRun=1` contra producción que devuelve candidatos; si Firestore pide un índice, crearlo con
-   el link del error y dejarlo anotado.
-4. Borrar la pantalla, `lib/expo.ts` y `scripts/import-expo.ts`. **La colección `expoProspects` se
-   deja intacta en Firestore** como respaldo — no se borran datos.
+**Corrección del 2026-08-18.** Esta tarea decía migrar los prospectos de `expoProspects` a
+`providers` y meterlos al envío automático. La auditoría de la colección lo desarmó: **los 112
+documentos tienen `email` vacío y `website` vacío.** Cero direcciones en toda la colección — solo
+`company`, `brands`, `category`, `city` y `state`. Los 3 marcados `mailSent: true` ya existen en
+`providers` por nombre.
 
-Ojo con el orden: la Task 4 tiene que estar antes, o los prospectos con `mailSent: true` y
-`dateSent` viejo entran al Dashboard como follow-ups vencidos el primer día.
+Migrarlos habría agregado 112 filas incontactables a una lista de 2502, con `contactMethod: "Web"`
+y sin ninguna posibilidad de entrar al envío automático, que necesita una dirección. El trabajo de
+mapear categorías, dedupear y escribir el script no compraba nada.
+
+Nico decidió descartarlos. La tarea queda en:
+
+1. Borrar `app/admin/(crm)/expo-west/`, `lib/expo.ts` y `scripts/import-expo.ts` (y su entrada en
+   `package.json`).
+2. **NO** tocar el filtro de `source` en `send-batch`: queda en `== "expo-outreach-import"`.
+3. **NO** escribir `scripts/migrate-expo-to-providers.ts`.
+4. **La colección `expoProspects` queda INTACTA en Firestore.** No se borran datos. El tipo
+   `ExpoProspect` se conserva en `lib/types.ts` como única documentación de su forma.
+5. `"expo-west-import"` se deja en la unión de `source` y en el guard de `lib/followup.ts`, con un
+   comentario explicando que está sin uso. Sacarlo obliga a volver a tocar `followup.ts` para nada.
+
+Los Excel originales siguen en la máquina de Nico. Si algún día consigue los contactos, se importan
+de cero por el pipeline normal, que para entonces ya tiene el heurístico de
+`lib/outreachEligibility.ts` **más el chequeo de MX** — mejor de lo que habría hecho esta migración.
+
+La extracción de la heurística de elegibilidad a `lib/outreachEligibility.ts` (punto 1 de la
+versión original) **sí se hizo**, junto con el pre-flight de MX, porque el pipeline de import la
+necesita igual.
 
 ### Task 9 — El generador de emails se muda al detalle del proveedor
 
@@ -275,9 +275,8 @@ Además de la verificación por tarea:
    que las métricas coincidan con las de Outreach.
 5. Blacklistear un proveedor de prueba y correr `POST /api/outreach/send-batch?dryRun=1` en
    producción: no tiene que aparecer entre los candidatos.
-6. Después de la Task 8, `?dryRun=1` tiene que seguir devolviendo candidatos (ahora también de
-   Expo West) y el conteo de `providers` subir en la cantidad exacta que reportó el dry-run de la
-   migración.
+6. Después de la Task 8, `?dryRun=1` tiene que seguir devolviendo candidatos y el conteo de
+   `providers` NO tiene que cambiar: los prospectos de Expo West se descartaron, no se migran.
 7. Verificar en el navegador, no pedirle a Nico que pruebe a mano (CLAUDE.md).
 
 ---

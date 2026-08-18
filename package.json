@@ -9,7 +9,6 @@
     "lint": "eslint",
     "test": "vitest run",
     "seed": "tsx scripts/seed.ts",
-    "import-expo": "tsx scripts/import-expo.ts",
     "import-providers": "tsx scripts/import-providers.ts",
     "import-outreach-list": "tsx scripts/import-outreach-list.ts",
     "outreach-test": "tsx scripts/outreach-test-send.ts",
