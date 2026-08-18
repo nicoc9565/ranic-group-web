@@ -15,7 +15,8 @@
     "outreach-test": "tsx scripts/outreach-test-send.ts",
     "import-transactions": "tsx scripts/import-transactions.ts",
     "import-stock": "tsx scripts/import-stock.ts",
-    "migrate-remove-monthly-amazon": "tsx scripts/migrate-remove-monthly-amazon.ts"
+    "migrate-remove-monthly-amazon": "tsx scripts/migrate-remove-monthly-amazon.ts",
+    "migrate-contact-fields": "tsx scripts/migrate-contact-fields.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

@@ -29,11 +29,22 @@ export function subscribeProviders(cb: (providers: Provider[]) => void) {
 
 export function addProvider(data: ProviderInput) {
   const now = Date.now();
-  return addDoc(collection(db, COL), { ...data, createdAt: now, updatedAt: now });
+  return addDoc(collection(db, COL), {
+    ...data,
+    companyLower: data.company.toLowerCase(),
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 export function updateProvider(id: string, patch: Partial<Provider>) {
-  return updateDoc(doc(db, COL, id), { ...patch, updatedAt: Date.now() });
+  // companyLower es derivado: se recalcula acá y no en el formulario, así ningún lugar del CRM
+  // puede dejar el índice de búsqueda desincronizado con el nombre real.
+  const derived =
+    patch.company !== undefined
+      ? { companyLower: patch.company.toLowerCase() }
+      : {};
+  return updateDoc(doc(db, COL, id), { ...patch, ...derived, updatedAt: Date.now() });
 }
 
 export function deleteProvider(id: string) {
