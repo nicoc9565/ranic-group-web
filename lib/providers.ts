@@ -8,7 +8,6 @@ import {
   getDocs,
   limit,
   onSnapshot,
-  orderBy,
   query,
   updateDoc,
   where,
