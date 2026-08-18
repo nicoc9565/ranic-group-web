@@ -38,6 +38,10 @@ export function addProvider(data: ProviderInput) {
   return addDoc(collection(db, COL), {
     ...data,
     companyLower: data.company.toLowerCase(),
+    // source SIEMPRE presente. Es lo que hace queryable "no es outreach frío" en
+    // fetchFollowUpCandidates: si un proveedor nuevo se creara sin el campo, no aparecería nunca
+    // en el Dashboard y nada se pondría en rojo.
+    source: data.source ?? "manual",
     createdAt: now,
     updatedAt: now,
   });
@@ -115,33 +119,33 @@ export async function fetchHardBouncedProviders(): Promise<Provider[]> {
 }
 
 /**
- * Candidatos a follow-up: todos los proveedores que fueron contactados alguna vez.
+ * Candidatos a follow-up: los proveedores que pueden tener una secuencia manual corriendo.
  *
- * `> ""` deja afuera los que tienen firstContactDate en null o ausente (en Firestore null ordena
- * antes que cualquier string). Hoy son 84 documentos contra 2502: el filtro hace el trabajo.
+ * DOS queries de igualdad, unidas en el cliente:
+ *   source == "manual"        → los que carga Nico (addProvider lo escribe siempre).
+ *   followUpForced == true    → outreach frío que Nico metió a mano a la secuencia.
  *
- * SIN limit, a propósito. La versión anterior bajaba los N más viejos por fecha, asumiendo que el
- * outreach frío —siempre más nuevo— quedaba al final y no desplazaba a nadie. Es falso: hay dos
- * proveedores manuales con firstContactDate en el futuro (2026-11-03 y 2026-11-04), así que en
- * cuanto la campaña acumule unos cientos de envíos esos dos se caen de la ventana y sus follow-ups
- * desaparecen de la pantalla sin ningún error. Un límite que descarta datos correctos en silencio
- * no es una optimización, es un bug con fecha de activación.
+ * Ninguna depende de la AUSENCIA de un campo, que es la trampa de Firestore que ya nos costó una
+ * feature entera: tanto `not-in` como `orderBy` descartan en silencio los documentos que no
+ * tienen el campo, así que un proveedor creado sin `source` habría desaparecido de la pantalla
+ * sin que nada fallara. Las dos son de un solo campo: no hacen falta índices compuestos.
  *
- * El costo real es que esto crece con la campaña (~900 documentos cuando termine). Si molesta, la
- * solución no es recortar la ventana sino hacer queryable "no es outreach frío": escribir
- * source: "manual" en los ~82 heredados y filtrar con not-in. Requiere migración, así que queda
- * como decisión aparte.
+ * Esto reemplazó a una ventana de los N más viejos por firstContactDate, que asumía que el
+ * outreach frío —siempre más nuevo— quedaba al final. Era falso: hay proveedores manuales con
+ * fecha en el futuro (2026-11-03, 2026-11-04) que se habrían caído de la ventana a medida que la
+ * campaña acumulaba envíos. Un límite que descarta datos correctos en silencio no es una
+ * optimización, es un bug con fecha de activación.
  *
- * El estado real lo calcula followUpStatus sobre estos documentos, que ya descarta el outreach
- * frío (ver el guard en lib/followup.ts).
+ * El estado real lo calcula followUpStatus sobre estos documentos.
  */
 export async function fetchFollowUpCandidates(): Promise<Provider[]> {
-  const snap = await getDocs(
-    query(
-      providersCol(),
-      where("firstContactDate", ">", ""),
-      orderBy("firstContactDate", "asc"),
-    ),
-  );
-  return toProviders(snap.docs);
+  const [manual, forced] = await Promise.all([
+    getDocs(query(providersCol(), where("source", "==", "manual"))),
+    getDocs(query(providersCol(), where("followUpForced", "==", true))),
+  ]);
+  const byId = new Map<string, Provider>();
+  for (const p of [...toProviders(manual.docs), ...toProviders(forced.docs)]) {
+    byId.set(p.id, p);
+  }
+  return [...byId.values()];
 }

@@ -3,6 +3,7 @@
  *
  *   - companyLower  → company.toLowerCase(), para búsqueda y orden.
  *   - replyDetectedAt / bounceType → deducidos de las notas que dejó el cron hasta ahora.
+ *   - source: "manual" → SOLO donde el campo esté ausente, nunca pisando un import.
  *
  * Este es el ÚNICO lugar donde leer las notas por string es correcto: es la traducción del
  * formato viejo al nuevo, se corre una vez y no vuelve a mirarse. De acá en adelante los campos
@@ -38,7 +39,7 @@ async function main() {
   console.log(`\nProveedores leídos: ${snap.size}`);
 
   const patches: { id: string; company: string; patch: Record<string, unknown> }[] = [];
-  const counts = { companyLower: 0, replyDetectedAt: 0, hard: 0, soft: 0 };
+  const counts = { companyLower: 0, replyDetectedAt: 0, hard: 0, soft: 0, source: 0 };
 
   for (const d of snap.docs) {
     const p = { id: d.id, ...(d.data() as Omit<Provider, "id">) };
@@ -74,6 +75,14 @@ async function main() {
       }
     }
 
+    // El Dashboard busca los candidatos a follow-up con where("source","==","manual"). Los
+    // proveedores cargados antes de que existiera el campo no tienen ninguno, y una query de
+    // igualdad no los ve. Se completa solo donde falta: un "expo-outreach-import" no se pisa.
+    if (p.source === undefined) {
+      patch.source = "manual";
+      counts.source++;
+    }
+
     if (Object.keys(patch).length > 0) {
       patches.push({ id: p.id, company: p.company, patch });
     }
@@ -84,6 +93,7 @@ async function main() {
   console.log(`  replyDetectedAt deducido: ${counts.replyDetectedAt}`);
   console.log(`  bounceType "hard"       : ${counts.hard}`);
   console.log(`  bounceType "soft"       : ${counts.soft}`);
+  console.log(`  source "manual"         : ${counts.source}`);
 
   const deduced = patches.filter(
     (x) => "replyDetectedAt" in x.patch || "bounceType" in x.patch,
