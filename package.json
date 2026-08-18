@@ -16,7 +16,8 @@
     "import-stock": "tsx scripts/import-stock.ts",
     "migrate-remove-monthly-amazon": "tsx scripts/migrate-remove-monthly-amazon.ts",
     "migrate-contact-fields": "tsx scripts/migrate-contact-fields.ts",
-    "check-mx": "tsx scripts/check-mx.ts"
+    "check-mx": "tsx scripts/check-mx.ts",
+    "migrate-excluded-reason": "tsx scripts/migrate-excluded-reason.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

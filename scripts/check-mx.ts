@@ -13,16 +13,19 @@
  * NO corrige typos. "info@magnogrip.cpm" es obviamente ".com", pero una dirección adivinada que
  * rebota es peor que una que no se manda: los queda para revisión manual.
  *
+ * Escribe excludedReason, NO sendError: nunca se intentó mandarles nada. sendError es un intento
+ * que falló; mezclarlos hacía que un fallo real quedara sepultado entre catorce no-fallos.
+ *
  * Uso:
  *   npm run check-mx -- --dry-run   (resuelve y reporta, no escribe)
- *   npm run check-mx                (escribe outreachEligible:false + sendError)
+ *   npm run check-mx                (escribe outreachEligible:false + excludedReason)
  */
 import "./env";
 import { adminDb } from "../lib/firebaseAdmin";
 import { domainOf, resolveDomains, type DomainVerdict } from "../lib/mxCheck";
 import type { Provider } from "../lib/types";
 
-const SEND_ERROR = "dominio sin registro MX";
+const EXCLUDED_REASON = "dominio sin registro MX";
 const BATCH_LIMIT = 500;
 
 async function main() {
@@ -75,11 +78,11 @@ async function main() {
     const chunk = affected.slice(i, i + BATCH_LIMIT);
     const batch = adminDb().batch();
     for (const p of chunk) {
-      // Solo estos dos campos: status y notas son el registro humano y no los toca un chequeo
+      // Solo estos campos: status y notas son el registro humano y no los toca un chequeo
       // automático de DNS.
       batch.update(adminDb().collection("providers").doc(p.id), {
         outreachEligible: false,
-        sendError: SEND_ERROR,
+        excludedReason: EXCLUDED_REASON,
         updatedAt: Date.now(),
       });
     }

@@ -58,8 +58,19 @@ export type Provider = {
   gmailThreadId?: string | null;
   /** Timestamp del último intento de envío automático (éxito o error). */
   sendAttemptedAt?: number | null;
-  /** Motivo de un envío automático fallido (bounce, dirección inválida, etc.). null si no falló. */
+  /**
+   * Motivo de un envío automático que se INTENTÓ y falló (rechazo del servidor remoto, rebote
+   * duro). null si no falló. Lo escriben el catch de send-batch y el rebote duro de check-replies.
+   */
   sendError?: string | null;
+  /**
+   * Motivo por el que quedó fuera del envío automático SIN haberse intentado nunca.
+   * Distinto de sendError, que es un intento que falló.
+   *
+   * Estaban mezclados: la tabla de "envíos fallidos" mostraba 15 filas, 14 de las cuales eran
+   * exclusiones previas de MX, y el único fallo real quedaba sepultado abajo de ellas.
+   */
+  excludedReason?: string | null;
   /**
    * Origen del proveedor, para auditoría.
    *
