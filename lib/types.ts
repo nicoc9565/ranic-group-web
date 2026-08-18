@@ -1,6 +1,8 @@
 // Tipos y enums del dominio del CRM de RANIC GROUP.
 // Labels de UI en español; el contenido de los emails (otro módulo) va en inglés.
 
+import type { ContactBucket } from "./contactStage";
+
 export type Category =
   | "Fragancias & Beauty"
   | "Health & Personal Care"
@@ -112,6 +114,19 @@ export type Provider = {
   bounceType?: "hard" | "soft" | null;
   /** company.toLowerCase(), para búsqueda y orden sin traerse el documento entero a memoria. */
   companyLower?: string;
+  /**
+   * Etapa de contacto ya resuelta (ver lib/contactStage.ts). Es un CACHE: la fuente de verdad es
+   * computeBucket(). Existe porque la escalera de precedencia no se puede expresar como filtros
+   * de Firestore, y sin él una query por etapa haría que los grupos se pisen y los contadores no
+   * sumen el total.
+   *
+   * No incluye "sin-respuesta": esa depende del paso del tiempo y un campo persistido se quedaría
+   * viejo solo. Se resuelve en la query comparando firstContactDate contra el corte.
+   *
+   * Hay que recalcularlo en TODO camino que toque blacklisted, optedOut, excludedReason, status,
+   * bounceType, replyDetectedAt o firstContactDate.
+   */
+  bucket?: ContactBucket;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;

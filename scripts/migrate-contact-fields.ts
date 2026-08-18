@@ -4,6 +4,11 @@
  *   - companyLower  → company.toLowerCase(), para búsqueda y orden.
  *   - replyDetectedAt / bounceType → deducidos de las notas que dejó el cron hasta ahora.
  *   - source: "manual" → SOLO donde el campo esté ausente, nunca pisando un import.
+ *   - bucket → la etapa de contacto ya resuelta (ver lib/contactStage.ts).
+ *
+ * ORDEN: correr `migrate-excluded-reason` ANTES que esto. `excludedReason` es el primer peldaño
+ * de la escalera de computeBucket, así que si se calcula el bucket antes de moverlo, los 15
+ * excluidos por MX quedan en la etapa equivocada.
  *
  * Este es el ÚNICO lugar donde leer las notas por string es correcto: es la traducción del
  * formato viejo al nuevo, se corre una vez y no vuelve a mirarse. De acá en adelante los campos
@@ -16,6 +21,7 @@
  *   npm run migrate-contact-fields                (escribe, en batches de 500)
  */
 import "./env";
+import { computeBucket } from "../lib/contactStage";
 import { adminDb } from "../lib/firebaseAdmin";
 import type { Provider } from "../lib/types";
 
@@ -39,7 +45,8 @@ async function main() {
   console.log(`\nProveedores leídos: ${snap.size}`);
 
   const patches: { id: string; company: string; patch: Record<string, unknown> }[] = [];
-  const counts = { companyLower: 0, replyDetectedAt: 0, hard: 0, soft: 0, source: 0 };
+  const counts = { companyLower: 0, replyDetectedAt: 0, hard: 0, soft: 0, source: 0, bucket: 0 };
+  const byBucket = new Map<string, number>();
 
   for (const d of snap.docs) {
     const p = { id: d.id, ...(d.data() as Omit<Provider, "id">) };
@@ -83,6 +90,15 @@ async function main() {
       counts.source++;
     }
 
+    // bucket se calcula sobre el documento YA parcheado: si en esta misma corrida se dedujo un
+    // bounceType "hard", la etapa tiene que reflejarlo.
+    const bucket = computeBucket({ ...p, ...patch } as Provider);
+    byBucket.set(bucket, (byBucket.get(bucket) ?? 0) + 1);
+    if (p.bucket !== bucket) {
+      patch.bucket = bucket;
+      counts.bucket++;
+    }
+
     if (Object.keys(patch).length > 0) {
       patches.push({ id: p.id, company: p.company, patch });
     }
@@ -94,6 +110,12 @@ async function main() {
   console.log(`  bounceType "hard"       : ${counts.hard}`);
   console.log(`  bounceType "soft"       : ${counts.soft}`);
   console.log(`  source "manual"         : ${counts.source}`);
+  console.log(`  bucket a escribir       : ${counts.bucket}`);
+  console.log(`
+  distribución por etapa (todos los proveedores):`);
+  for (const [b, n] of [...byBucket].sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${b.padEnd(16)} ${n}`);
+  }
 
   const deduced = patches.filter(
     (x) => "replyDetectedAt" in x.patch || "bounceType" in x.patch,

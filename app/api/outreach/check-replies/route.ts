@@ -13,6 +13,7 @@
 // listRecentBounces y se correlacionan por dirección, no por thread.
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
+import { computeBucket } from "../../../../lib/contactStage";
 import { adminDb } from "../../../../lib/firebaseAdmin";
 import { inspectThread, listRecentBounces } from "../../../../lib/gmail";
 import { recordBounceAdmin } from "../../../../lib/outreachConfigAdmin";
@@ -53,6 +54,7 @@ export async function POST(req: Request) {
     const patch: Record<string, unknown> = { replyCheckedAt: now };
 
     if (!p.gmailThreadId) {
+      // Solo toca replyCheckedAt, que no participa de la escalera: no hace falta recalcular.
       await adminDb().collection("providers").doc(p.id).update(patch);
       continue;
     }
@@ -78,7 +80,10 @@ export async function POST(req: Request) {
       }
     }
 
-    await adminDb().collection("providers").doc(p.id).update(patch);
+    await adminDb()
+      .collection("providers")
+      .doc(p.id)
+      .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
   }
 
   // ── Segunda mitad: rebotes ────────────────────────────────────────────────
@@ -136,7 +141,10 @@ export async function POST(req: Request) {
         softBounces++;
       }
 
-      await adminDb().collection("providers").doc(p.id).update(patch);
+      await adminDb()
+        .collection("providers")
+        .doc(p.id)
+        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
     }
   }
 

@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
 import {
+  computeBucket,
   CONTACT_STAGE_LABELS,
   contactStage,
   NO_REPLY_DAYS,
+  type ContactBucket,
   type ContactStage,
 } from "../contactStage";
 import type { Provider } from "../types";
@@ -168,5 +170,81 @@ describe("CONTACT_STAGE_LABELS", () => {
       expect(CONTACT_STAGE_LABELS[s]).toBeTruthy();
     }
     expect(Object.keys(CONTACT_STAGE_LABELS)).toHaveLength(stages.length);
+  });
+});
+
+describe("computeBucket — la invariante que sostiene la pantalla", () => {
+  function bucket(p: Partial<Provider>): ContactBucket {
+    return computeBucket({ ...base, ...p } as Provider);
+  }
+
+  // El caso que motivó cambiar la regla 5. send-batch escribe sendAttemptedAt cuando el envío
+  // falla, pero NO firstContactDate (advanceFollowUp solo corre en el camino de éxito). Con la
+  // regla vieja este proveedor caía en "contactado" sin fecha y la query que separa contactado de
+  // sin-respuesta lo habría descartado por no tener el campo: desaparecía de la pantalla sin que
+  // nada fallara.
+  test("envío fallido: sendAttemptedAt y sendError pero sin firstContactDate → sin-contactar", () => {
+    expect(
+      bucket({
+        status: "Por Contactar",
+        sendAttemptedAt: Date.parse("2026-08-18T13:00:00Z"),
+        sendError: "550 mailbox unavailable",
+        firstContactDate: null,
+      }),
+    ).toBe("sin-contactar");
+  });
+
+  test("todo lo que está en contactado tiene firstContactDate", () => {
+    const sinFecha = [
+      { firstContactDate: null, sendAttemptedAt: 1 },
+      { firstContactDate: null, sendAttemptedAt: null },
+      { firstContactDate: "", sendAttemptedAt: 1 },
+    ];
+    for (const p of sinFecha) {
+      expect(bucket(p as Partial<Provider>)).not.toBe("contactado");
+    }
+  });
+
+  test("excludedReason → descartado: quedó fuera sin haberse intentado nunca", () => {
+    expect(bucket({ excludedReason: "dominio sin registro MX" })).toBe("descartado");
+  });
+
+  test("excludedReason gana sobre respondio", () => {
+    expect(
+      bucket({
+        excludedReason: "dominio sin registro MX",
+        replyDetectedAt: Date.parse("2026-08-18T14:00:00Z"),
+      }),
+    ).toBe("descartado");
+  });
+
+  test("nunca devuelve sin-respuesta: ese corte es temporal y no se persiste", () => {
+    expect(bucket({ firstContactDate: "2026-01-01" })).toBe("contactado");
+  });
+});
+
+describe("contactStage se construye encima de computeBucket", () => {
+  const casos: Partial<Provider>[] = [
+    { blacklisted: true },
+    { optedOut: true },
+    { status: "Rechazado" },
+    { status: "Aprobado" },
+    { bounceType: "hard" },
+    { replyDetectedAt: 1 },
+    { firstContactDate: null, sendAttemptedAt: null },
+    { excludedReason: "x" },
+  ];
+  test("para todo lo que no es contactado, las dos funciones coinciden", () => {
+    for (const c of casos) {
+      const p = { ...base, ...c } as Provider;
+      const b = computeBucket(p);
+      expect(b).not.toBe("contactado");
+      expect(contactStage(p, TODAY)).toBe(b);
+    }
+  });
+  test("solo contactado se puede convertir en sin-respuesta", () => {
+    const p = { ...base, firstContactDate: "2026-01-01" } as Provider;
+    expect(computeBucket(p)).toBe("contactado");
+    expect(contactStage(p, TODAY)).toBe("sin-respuesta");
   });
 });

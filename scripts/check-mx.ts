@@ -21,6 +21,7 @@
  *   npm run check-mx                (escribe outreachEligible:false + excludedReason)
  */
 import "./env";
+import { computeBucket } from "../lib/contactStage";
 import { adminDb } from "../lib/firebaseAdmin";
 import { domainOf, resolveDomains, type DomainVerdict } from "../lib/mxCheck";
 import type { Provider } from "../lib/types";
@@ -80,10 +81,14 @@ async function main() {
     for (const p of chunk) {
       // Solo estos campos: status y notas son el registro humano y no los toca un chequeo
       // automático de DNS.
-      batch.update(adminDb().collection("providers").doc(p.id), {
+      const patch = {
         outreachEligible: false,
         excludedReason: EXCLUDED_REASON,
         updatedAt: Date.now(),
+      };
+      batch.update(adminDb().collection("providers").doc(p.id), {
+        ...patch,
+        bucket: computeBucket({ ...p, ...patch }),
       });
     }
     await batch.commit();

@@ -5,6 +5,7 @@ import {
   deleteDoc,
   doc,
   getCountFromServer,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -12,6 +13,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
+import { computeBucket } from "./contactStage";
 import { db } from "./firebase";
 import type { NoteEntry, Provider, Status } from "./types";
 
@@ -41,26 +43,46 @@ export function addProvider(data: ProviderInput) {
     // fetchFollowUpCandidates: si un proveedor nuevo se creara sin el campo, no aparecería nunca
     // en el Dashboard y nada se pondría en rojo.
     source: data.source ?? "manual",
+    bucket: computeBucket(data as Provider),
     createdAt: now,
     updatedAt: now,
   });
 }
 
-export function updateProvider(id: string, patch: Partial<Provider>) {
-  // companyLower es derivado: se recalcula acá y no en el formulario, así ningún lugar del CRM
-  // puede dejar el índice de búsqueda desincronizado con el nombre real.
-  const derived =
-    patch.company !== undefined
-      ? { companyLower: patch.company.toLowerCase() }
-      : {};
-  return updateDoc(doc(db, COL, id), { ...patch, ...derived, updatedAt: Date.now() });
+/**
+ * Actualiza un proveedor recalculando los campos derivados (companyLower y bucket).
+ *
+ * Lee el documento antes de escribir porque `bucket` depende de campos que el patch puede no
+ * traer: para saber si un cambio de `status` lo mueve a "descartado" hay que conocer también
+ * blacklisted, optedOut y el resto de la escalera. Sí, es una lectura extra por escritura; las
+ * escrituras del CRM son decenas por día y el costo es irrelevante al lado de tener el cache
+ * desincronizado.
+ *
+ * Los derivados se recalculan ACÁ y no en el formulario: así ningún lugar del CRM puede dejarlos
+ * desincronizados, presente o futuro.
+ */
+export async function updateProvider(id: string, patch: Partial<Provider>) {
+  const ref = doc(db, COL, id);
+  const snap = await getDoc(ref);
+  const current = snap.data() as Omit<Provider, "id"> | undefined;
+
+  const derived: Record<string, unknown> = {};
+  if (patch.company !== undefined) derived.companyLower = patch.company.toLowerCase();
+  if (current) derived.bucket = computeBucket({ id, ...current, ...patch } as Provider);
+
+  return updateDoc(ref, { ...patch, ...derived, updatedAt: Date.now() });
 }
 
 export function deleteProvider(id: string) {
   return deleteDoc(doc(db, COL, id));
 }
 
-/** Agrega una nota al log solo-append (no edita las existentes). */
+/**
+ * Agrega una nota al log solo-append (no edita las existentes).
+ *
+ * NO recalcula `bucket` a propósito: las notas no participan de la escalera de computeBucket.
+ * Si algún día una nota pasara a decidir la etapa, este es el lugar que hay que tocar.
+ */
 export function addNote(id: string, note: NoteEntry) {
   return updateDoc(doc(db, COL, id), {
     notes: arrayUnion(note),

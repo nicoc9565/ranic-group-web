@@ -2,6 +2,7 @@
 // cron de Task 11), respetando el límite diario de OutreachConfig. Server-only, usa Admin SDK
 // (ver Task 8) porque no hay sesión de usuario en un cron.
 import { NextResponse } from "next/server";
+import { computeBucket } from "../../../../lib/contactStage";
 import { adminDb } from "../../../../lib/firebaseAdmin";
 import { generateOutreachEmail } from "../../../../lib/outreachEmail";
 import { advanceFollowUp } from "../../../../lib/followup";
@@ -99,30 +100,34 @@ export async function POST(req: Request) {
       const subject = `Wholesale inquiry - ${p.company}`;
       const { threadId } = await sendOutreachEmail(p.email, subject, body);
       const today = new Date().toISOString().slice(0, 10);
+      const patch = {
+        status: "Contactado" as const,
+        gmailThreadId: threadId,
+        sendAttemptedAt: now,
+        sendError: null,
+        // Nunca chequeado. El campo tiene que existir sí o sí: el cron de reply-detection
+        // ordena por él, y Firestore excluye del orderBy a los docs que no lo tienen.
+        replyCheckedAt: 0,
+        updatedAt: now,
+        ...advanceFollowUp(p, today),
+      };
       await adminDb()
         .collection("providers")
         .doc(p.id)
-        .update({
-          status: "Contactado",
-          gmailThreadId: threadId,
-          sendAttemptedAt: now,
-          sendError: null,
-          // Nunca chequeado. El campo tiene que existir sí o sí: el cron de reply-detection
-          // ordena por él, y Firestore excluye del orderBy a los docs que no lo tienen.
-          replyCheckedAt: 0,
-          updatedAt: now,
-          ...advanceFollowUp(p, today),
-        });
+        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
       await incrementSentTodayAdmin();
       sent++;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       errors.push(`${p.company}: ${message}`);
-      await adminDb().collection("providers").doc(p.id).update({
-        sendAttemptedAt: now,
-        sendError: message,
-        updatedAt: now,
-      });
+      // El patch NO incluye firstContactDate: advanceFollowUp solo corre en el camino de éxito.
+      // Por eso computeBucket mira firstContactDate y no sendAttemptedAt — este proveedor tiene
+      // que quedar en "sin-contactar", no en un "contactado" sin fecha que la pantalla no vería.
+      const patch = { sendAttemptedAt: now, sendError: message, updatedAt: now };
+      await adminDb()
+        .collection("providers")
+        .doc(p.id)
+        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
     }
   }
 

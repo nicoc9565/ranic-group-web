@@ -28,6 +28,23 @@ export type ContactStage =
  */
 export const NO_REPLY_DAYS = 14;
 
+/**
+ * La etapa SIN el corte temporal: todo lo que se puede decidir mirando solo los campos del
+ * documento. Es lo que se persiste en `Provider.bucket` para poder filtrar por etapa en Firestore.
+ *
+ * Por qué no incluye "sin-respuesta": esa etapa depende del paso del tiempo — un proveedor cruza
+ * a los 14 días sin que nadie escriba nada — así que un campo persistido se quedaría viejo solo,
+ * en silencio y sin nada que lo dispare. Esa distinción se resuelve en la query, comparando
+ * firstContactDate contra el corte.
+ */
+export type ContactBucket =
+  | "descartado"
+  | "cuenta"
+  | "rebotado"
+  | "respondio"
+  | "contactado"
+  | "sin-contactar";
+
 const DISCARDED_STATUSES = new Set<Status>(["Rechazado", "No Acepta Nuevos"]);
 const ACCOUNT_STATUSES = new Set<Status>(["Aprobado", "En Negociación"]);
 
@@ -41,24 +58,49 @@ function daysSince(dayStr: string, today: Date): number {
 }
 
 /**
- * Etapa de contacto de un proveedor. La precedencia es ESTRICTA: gana la primera que aplica,
- * y el orden importa. Un proveedor blacklisteado que además respondió es `descartado`, no
- * `respondio`: lo que decidió Nico pesa más que lo que observó el programa. Un rebote duro gana
- * sobre `sin-respuesta` porque explica por qué no hubo respuesta.
+ * Escalera de precedencia ESTRICTA: gana la primera que aplica, y el orden importa. Un proveedor
+ * blacklisteado que además respondió es `descartado`, no `respondio`: lo que decidió Nico pesa más
+ * que lo que observó el programa. Un rebote duro gana sobre el resto porque explica por qué no
+ * hubo respuesta.
+ *
+ * INVARIANTE que sostiene la pantalla de Proveedores: todo proveedor en `contactado` tiene
+ * firstContactDate. La regla mira SOLO firstContactDate y no sendAttemptedAt a propósito. Cuando
+ * un envío falla, send-batch escribe sendAttemptedAt pero NO firstContactDate (advanceFollowUp
+ * corre únicamente en el camino de éxito). Con la regla vieja ese proveedor caía en `contactado`
+ * sin fecha, y la query que separa contactado de sin-respuesta filtra por firstContactDate:
+ * Firestore descarta los documentos que no tienen el campo, así que habría desaparecido de la
+ * pantalla sin que nada fallara. Es la misma trampa del campo ausente que ya costó dos features
+ * inertes con los tests en verde.
  */
-export function contactStage(p: Provider, today: Date): ContactStage {
-  if (p.blacklisted || p.optedOut || DISCARDED_STATUSES.has(p.status)) {
+export function computeBucket(p: Provider): ContactBucket {
+  if (
+    p.blacklisted ||
+    p.optedOut ||
+    p.excludedReason != null ||
+    DISCARDED_STATUSES.has(p.status)
+  ) {
     return "descartado";
   }
   if (ACCOUNT_STATUSES.has(p.status)) return "cuenta";
   if (p.bounceType === "hard") return "rebotado";
   if (p.replyDetectedAt != null) return "respondio";
-  // Ni el envío automático lo intentó ni hay un primer contacto manual registrado.
-  if (p.sendAttemptedAt == null && !p.firstContactDate) return "sin-contactar";
-  if (p.firstContactDate && daysSince(p.firstContactDate, today) > NO_REPLY_DAYS) {
-    return "sin-respuesta";
-  }
+  if (!p.firstContactDate) return "sin-contactar";
   return "contactado";
+}
+
+/**
+ * Etapa de contacto completa: computeBucket más el corte temporal.
+ *
+ * Se construye ENCIMA de computeBucket, no en paralelo: una sola escalera de precedencia, sin
+ * lógica duplicada que pueda divergir.
+ */
+export function contactStage(p: Provider, today: Date): ContactStage {
+  const bucket = computeBucket(p);
+  if (bucket !== "contactado") return bucket;
+  // La invariante de arriba garantiza que acá firstContactDate existe.
+  return daysSince(p.firstContactDate!, today) > NO_REPLY_DAYS
+    ? "sin-respuesta"
+    : "contactado";
 }
 
 export const CONTACT_STAGE_LABELS: Record<ContactStage, string> = {

@@ -19,6 +19,7 @@
  *   npm run migrate-excluded-reason
  */
 import "./env";
+import { computeBucket } from "../lib/contactStage";
 import { adminDb } from "../lib/firebaseAdmin";
 import { domainOf } from "../lib/mxCheck";
 import type { Provider } from "../lib/types";
@@ -45,7 +46,12 @@ async function main() {
       id: p.id,
       company: p.company,
       email: p.email,
-      patch: { excludedReason: MX_REASON, sendError: null, updatedAt: Date.now() },
+      patch: {
+        excludedReason: MX_REASON,
+        sendError: null,
+        updatedAt: Date.now(),
+        bucket: computeBucket({ ...p, excludedReason: MX_REASON, sendError: null }),
+      },
     });
   }
   console.log(`\nMarcados por check-mx (sendError == "${MX_REASON}"): ${marked.size}`);
@@ -71,6 +77,7 @@ async function main() {
         excludedReason: MANUAL_REASON,
         sendError: null,
         updatedAt: Date.now(),
+        bucket: computeBucket({ ...p, excludedReason: MANUAL_REASON, sendError: null }),
       },
     });
   }
