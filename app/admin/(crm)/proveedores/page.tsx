@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { ProviderDetail } from "@/components/ProviderDetail";
 import { ProviderForm, type ProviderFormValues } from "@/components/ProviderForm";
 import { ProviderTable } from "@/components/ProviderTable";
 import { subscribeBlacklist } from "@/lib/blacklist";
+import { CONTACT_STAGE_LABELS, type ContactStage } from "@/lib/contactStage";
 import { todayISO } from "@/lib/format";
 import {
   addNote,
   addProvider,
   deleteProvider,
-  subscribeProviders,
   updateProvider,
 } from "@/lib/providers";
+import {
+  ALL_STAGES,
+  countByStage,
+  fetchProviderById,
+  fetchProviderPage,
+} from "@/lib/providersQuery";
 import {
   CATEGORIES,
   STATUSES,
@@ -22,60 +28,134 @@ import {
   type Provider,
   type Status,
 } from "@/lib/types";
+import type { DocumentSnapshot } from "firebase/firestore";
 
 const selectCls =
   "rounded-control border border-line bg-surface px-2 py-1.5 text-sm text-ink outline-none focus:border-olive";
 
 export default function ProveedoresPage() {
-  const [providers, setProviders] = useState<Provider[]>([]);
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
 
+  const [stage, setStage] = useState<ContactStage>("sin-contactar");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "">("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "">("");
 
-  // Abrir el detalle si venimos con ?id=… (link desde el dashboard). Esta página solo monta
-  // en el cliente (el layout muestra "Cargando…" hasta resolver auth), así que leer la URL en
-  // el inicializador es seguro y evita el setState-en-effect.
+  const [rows, setRows] = useState<Provider[]>([]);
+  const [cursor, setCursor] = useState<DocumentSnapshot | null>(null);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{
+    total: number;
+    byStage: Record<ContactStage, number>;
+  } | null>(null);
+
   const [detailId, setDetailId] = useState<string | null>(() =>
     typeof window === "undefined"
       ? null
       : new URLSearchParams(window.location.search).get("id"),
   );
+  const [fetchedDetail, setFetchedDetail] = useState<Provider | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
-  useEffect(() => subscribeProviders(setProviders), []);
-  useEffect(() => subscribeBlacklist(setBlacklist), []);
-
   const today = useMemo(() => new Date(), []);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return providers
-      .filter((p) => {
+  useEffect(() => subscribeBlacklist(setBlacklist), []);
+
+  // Los contadores se piden una vez al montar: son 8 agregaciones, del orden de 20 lecturas.
+  useEffect(() => {
+    let cancelled = false;
+    countByStage(today).then((c) => {
+      if (!cancelled) setCounts(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [today]);
+
+  // Debounce de la busqueda: sin esto cada tecla dispara una query a Firestore.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Primera pagina de la etapa activa. Cambiar de etapa o de busqueda resetea el cursor.
+  //
+  // `loading` se DERIVA de comparar la consulta pedida contra la ultima que respondio, en vez de
+  // ser un estado que se prende a mano al entrar al effect. Ademas de evitar el setState
+  // sincrono, no puede quedarse colgado en true si una respuesta se descarta por cancelled.
+  const queryKey = `${stage}|${debouncedSearch}`;
+  const loading = loadedKey !== queryKey;
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchProviderPage({ stage, search: debouncedSearch, today }).then((page) => {
+      if (cancelled) return;
+      setRows(page.rows);
+      setCursor(page.cursor);
+      setLoadedKey(`${stage}|${debouncedSearch}`);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [stage, debouncedSearch, today]);
+
+  const loadingMore = useRef(false);
+  const loadMore = useCallback(async () => {
+    if (!cursor || loadingMore.current) return;
+    loadingMore.current = true;
+    try {
+      const page = await fetchProviderPage({
+        stage,
+        search: debouncedSearch,
+        today,
+        cursor,
+      });
+      setRows((prev) => [...prev, ...page.rows]);
+      setCursor(page.cursor);
+    } finally {
+      loadingMore.current = false;
+    }
+  }, [cursor, stage, debouncedSearch, today]);
+
+  // El proveedor abierto se DERIVA, no se sincroniza con un effect: si esta en la pagina cargada
+  // se usa esa copia (que se refresca sola al recargar), y si no, la que se trajo por id.
+  const detailProvider = detailId
+    ? (rows.find((p) => p.id === detailId) ??
+      (fetchedDetail?.id === detailId ? fetchedDetail : null))
+    : null;
+
+  // Viniendo de ?id= el proveedor puede no estar en la pagina cargada: se trae puntualmente.
+  useEffect(() => {
+    if (!detailId || rows.some((p) => p.id === detailId)) return;
+    let cancelled = false;
+    fetchProviderById(detailId).then((p) => {
+      if (!cancelled) setFetchedDetail(p);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [detailId, rows]);
+
+  /**
+   * Estado y categoria filtran las filas YA CARGADAS, no la query.
+   *
+   * Hacerlos server-side pediria un indice compuesto por cada combinacion de etapa x estado x
+   * categoria, y con el tope diario de Spark no vale la pena: la etapa ya acota a como mucho una
+   * pagina. La UI lo dice explicitamente para que nadie lea un conteo que no es.
+   */
+  const visible = useMemo(
+    () =>
+      rows.filter((p) => {
         if (statusFilter && p.status !== statusFilter) return false;
         if (categoryFilter && p.category !== categoryFilter) return false;
-        if (
-          q &&
-          !p.company.toLowerCase().includes(q) &&
-          !p.contact.toLowerCase().includes(q)
-        )
-          return false;
         return true;
-      })
-      .sort((a, b) => a.company.localeCompare(b.company));
-  }, [providers, search, statusFilter, categoryFilter]);
+      }),
+    [rows, statusFilter, categoryFilter],
+  );
 
-  const detailProvider = detailId
-    ? providers.find((p) => p.id === detailId) ?? null
-    : null;
-  const editingProvider = editId
-    ? providers.find((p) => p.id === editId)
-    : undefined;
-
-  // Nota: si el proveedor abierto se borra, `detailProvider` pasa a null y el modal se cierra
-  // solo (no hace falta un effect que sincronice detailId).
+  const editingProvider = editId ? rows.find((p) => p.id === editId) : undefined;
 
   function openNew() {
     setEditId(null);
@@ -86,6 +166,17 @@ export default function ProveedoresPage() {
     setFormOpen(false);
     setEditId(null);
   }
+
+  /** Tras escribir, la fila puede cambiar de etapa: se recargan pagina y contadores. */
+  const refresh = useCallback(async () => {
+    const [page, c] = await Promise.all([
+      fetchProviderPage({ stage, search: debouncedSearch, today }),
+      countByStage(today),
+    ]);
+    setRows(page.rows);
+    setCursor(page.cursor);
+    setCounts(c);
+  }, [stage, debouncedSearch, today]);
 
   async function handleSave(values: ProviderFormValues) {
     if (editId) {
@@ -99,6 +190,7 @@ export default function ProveedoresPage() {
         notes: [],
       });
     }
+    await refresh();
   }
 
   return (
@@ -117,11 +209,26 @@ export default function ProveedoresPage() {
         }
       />
 
+      {/* Contadores por etapa. Suman el total porque las etapas son mutuamente excluyentes:
+          computeBucket devuelve exactamente una. */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <StageChip label="Total" value={counts?.total} active={false} />
+        {ALL_STAGES.map((s) => (
+          <StageChip
+            key={s}
+            label={CONTACT_STAGE_LABELS[s]}
+            value={counts?.byStage[s]}
+            active={stage === s}
+            onClick={() => setStage(s)}
+          />
+        ))}
+      </div>
+
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por empresa o contacto…"
+          placeholder="Buscar por empresa (empieza con)"
           className="min-w-[12rem] flex-1 rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-olive"
         />
         <select
@@ -141,9 +248,9 @@ export default function ProveedoresPage() {
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as Category | "")}
           className={selectCls}
-          aria-label="Filtrar por categoría"
+          aria-label="Filtrar por categoria"
         >
-          <option value="">Todas las categorías</option>
+          <option value="">Todas las categorias</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -152,11 +259,35 @@ export default function ProveedoresPage() {
         </select>
       </div>
 
-      <ProviderTable
-        providers={filtered}
-        today={today}
-        onRowClick={(p) => setDetailId(p.id)}
-      />
+      {(statusFilter || categoryFilter) && (
+        <p className="mb-2 text-xs text-ink-soft">
+          Estado y categoria filtran las {rows.length} filas cargadas, no la etapa completa.
+        </p>
+      )}
+
+      {loading ? (
+        <p className="font-mono text-sm text-ink-soft">Cargando...</p>
+      ) : (
+        <>
+          <ProviderTable
+            providers={visible}
+            today={today}
+            onRowClick={(p) => setDetailId(p.id)}
+          />
+
+          {cursor && (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                className="rounded-control border border-olive px-4 py-2 text-sm font-medium text-olive transition-colors hover:bg-olive/10"
+              >
+                Cargar mas ({rows.length} de {counts?.byStage[stage] ?? "..."})
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       <ProviderForm
         open={formOpen}
@@ -182,16 +313,56 @@ export default function ProveedoresPage() {
           onDelete={async () => {
             await deleteProvider(detailProvider.id);
             setDetailId(null);
+            await refresh();
           }}
-          onResumeFollowUp={() =>
-            updateProvider(detailProvider.id, { followUpStopped: false })
-          }
-          onStartFollowUp={(patch) => updateProvider(detailProvider.id, patch)}
-          onToggleOptOut={(optedOut) =>
-            updateProvider(detailProvider.id, { optedOut })
-          }
+          onResumeFollowUp={async () => {
+            await updateProvider(detailProvider.id, { followUpStopped: false });
+            await refresh();
+          }}
+          onStartFollowUp={async (patch) => {
+            await updateProvider(detailProvider.id, patch);
+            await refresh();
+          }}
+          onToggleOptOut={async (optedOut) => {
+            await updateProvider(detailProvider.id, { optedOut });
+            await refresh();
+          }}
         />
       )}
     </>
+  );
+}
+
+function StageChip({
+  label,
+  value,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number | undefined;
+  active: boolean;
+  onClick?: () => void;
+}) {
+  const base = "rounded-control border px-3 py-1.5 text-left transition-colors";
+  const cls = onClick
+    ? active
+      ? "border-olive bg-olive/10"
+      : "border-line bg-surface hover:border-olive"
+    : "border-line bg-stone/40 cursor-default";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className={`${base} ${cls}`}
+    >
+      <span className="block font-eyebrow text-[10px] uppercase tracking-[0.15em] text-ink-soft">
+        {label}
+      </span>
+      <span className="block font-display text-lg font-bold tabular-nums text-ink">
+        {value ?? "—"}
+      </span>
+    </button>
   );
 }
