@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { withBucket } from "../../../../lib/contactStage";
 import { adminDb } from "../../../../lib/firebaseAdmin";
+import { SEND_CANDIDATE_FILTERS } from "../../../../lib/sendCandidate";
 import {
   sendFailurePatch,
   sendSuccessPatch,
@@ -67,14 +68,10 @@ export async function POST(req: Request) {
   // Scoped a source === "expo-outreach-import" a propósito: los proveedores manuales
   // pre-existentes no tienen optedOut seteado, y aunque lo tuvieran, el envío automático no debe
   // tocar relaciones que Nico ya gestiona a mano desde el CRM.
-  const snap = await adminDb()
-    .collection("providers")
-    .where("status", "==", "Por Contactar")
-    .where("contactMethod", "==", "Email")
-    .where("source", "==", "expo-outreach-import")
-    .where("outreachEligible", "==", true)
-    .where("optedOut", "==", false)
-    .where("sendAttemptedAt", "==", null)
+  const snap = await SEND_CANDIDATE_FILTERS.reduce<FirebaseFirestore.Query>(
+    (q, [field, value]) => q.where(field, "==", value),
+    adminDb().collection("providers"),
+  )
     .limit(take)
     .get();
 

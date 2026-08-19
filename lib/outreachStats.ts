@@ -8,6 +8,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { SEND_CANDIDATE_FILTERS } from "./sendCandidate";
 import type { Provider } from "./types";
 
 /**
@@ -50,18 +51,13 @@ export async function fetchOutreachStats(): Promise<OutreachStats> {
         where("outreachEligible", "==", true),
       ),
     ),
-    // Exactamente los mismos seis filtros que usa send-batch, con count() en vez de limit(): así
-    // el número que se muestra es el que el cron va a encontrar, y reusa el índice compuesto que
-    // ya existe en vez de pedir uno nuevo.
+    // Los mismos filtros que usa send-batch, derivados del MISMO dato, con count() en vez de
+    // limit(): el número que se muestra es exactamente el que el cron va a encontrar, y no puede
+    // quedar viejo si alguien cambia el criterio. Reusa el índice compuesto que ya existe.
     count(
       query(
         providersCol(),
-        where("status", "==", "Por Contactar"),
-        where("contactMethod", "==", "Email"),
-        where("source", "==", OUTREACH_SOURCE),
-        where("outreachEligible", "==", true),
-        where("optedOut", "==", false),
-        where("sendAttemptedAt", "==", null),
+        ...SEND_CANDIDATE_FILTERS.map(([field, value]) => where(field, "==", value)),
       ),
     ),
     count(

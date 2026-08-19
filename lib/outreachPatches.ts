@@ -2,7 +2,8 @@ import { advanceFollowUp } from "./followup";
 import type { Provider } from "./types";
 
 /**
- * Los patches que escriben los crons de outreach, como funciones PURAS.
+ * Los patches que escriben los caminos que afectan al outreach y a la escalera de contacto, como
+ * funciones PURAS.
  *
  * Están acá y no inline en las rutas para que se puedan testear: lo que importa verificar no es
  * que el write ocurra, sino que el `bucket` resultante refleje el campo nuevo. Con el patch
@@ -79,4 +80,30 @@ export function hardBouncePatch(opts: {
 export function softBouncePatch(p: Provider, opts: { now: number }): Partial<Provider> {
   if (p.bounceType === "hard") return { updatedAt: opts.now };
   return { bounceType: "soft", updatedAt: opts.now };
+}
+
+/**
+ * Marcar o desmarcar un proveedor como blacklisteado.
+ *
+ * Marcar es CUATRO campos, no uno. `blacklisted` solo no alcanza: no está entre los filtros de
+ * send-batch (ver lib/sendCandidate.ts), así que un proveedor con `blacklisted: true` y nada más
+ * queda invisible en la pantalla —el bucket lo manda a "descartado"— y al mismo tiempo vivo para
+ * el cron, que le seguiría mandando mails. El peor de los dos mundos, y nadie lo vería.
+ *
+ * Desmarcar NO restaura `outreachEligible` a propósito: pudo haberse apagado por otra razón
+ * (dominio sin MX, rebote duro), y resucitarlo acá volvería a meter en la campaña a una dirección
+ * que ya sabemos que no recibe.
+ */
+export function blacklistPatch(
+  blacklisted: boolean,
+): Partial<Provider> & { blacklisted: boolean } {
+  if (!blacklisted) {
+    return { blacklisted: false, optedOut: false, followUpStopped: false };
+  }
+  return {
+    blacklisted: true,
+    optedOut: true,
+    outreachEligible: false,
+    followUpStopped: true,
+  };
 }

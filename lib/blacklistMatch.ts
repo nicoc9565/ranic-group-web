@@ -19,6 +19,9 @@ export const MIN_INCLUSION_LENGTH = 4;
 /**
  * Chequeo flexible (case-insensitive) de si un nombre coincide con alguna entrada de la
  * blacklist. Pensado para avisar al crear/editar un proveedor.
+ *
+ * Se llama desde UN solo lugar (ProviderForm) y es un filtro de ENTRADA: no afecta a los
+ * proveedores ya importados. El detalle está en lib/blacklist.ts, arriba del re-export.
  */
 export function isBlacklisted(name: string, list: BlacklistEntry[]): boolean {
   const n = name.trim().toLowerCase();

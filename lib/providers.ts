@@ -14,6 +14,7 @@ import {
   where,
 } from "firebase/firestore";
 import { computeBucket } from "./contactStage";
+import { blacklistPatch } from "./outreachPatches";
 import { db } from "./firebase";
 import type { NoteEntry, Provider, Status } from "./types";
 
@@ -71,6 +72,20 @@ export async function updateProvider(id: string, patch: Partial<Provider>) {
   if (current) derived.bucket = computeBucket({ id, ...current, ...patch } as Provider);
 
   return updateDoc(ref, { ...patch, ...derived, updatedAt: Date.now() });
+}
+
+/**
+ * ÚNICO camino para marcar o desmarcar un proveedor como blacklisteado.
+ *
+ * Ni el botón de la ficha ni el checkbox del formulario escriben `blacklisted` por su cuenta:
+ * los dos pasan por acá. La razón es que marcar implica cuatro campos, y dos caminos que tengan
+ * que acordarse de los mismos cuatro es un camino de más — el que se olvide deja al proveedor
+ * invisible en la pantalla y activo para el cron a la vez.
+ *
+ * Va por updateProvider, así que el bucket se recalcula como en cualquier otra escritura.
+ */
+export function setBlacklisted(id: string, blacklisted: boolean) {
+  return updateProvider(id, blacklistPatch(blacklisted));
 }
 
 export function deleteProvider(id: string) {
