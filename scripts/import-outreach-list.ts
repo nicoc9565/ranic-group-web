@@ -19,6 +19,13 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
+import { domainOf, resolveDomains } from "../lib/mxCheck";
+import {
+  ALL_REASONS,
+  EMAIL_RE,
+  ineligibleReasons,
+  type IneligibleReason,
+} from "../lib/outreachEligibility";
 import type { ContactMethod, Provider, Status } from "../lib/types";
 
 function slug(name: string): string {
@@ -32,146 +39,6 @@ function slug(name: string): string {
 
 function clean(value: unknown): string {
   return String(value ?? "").trim();
-}
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// ── Elegibilidad para el envío automático ─────────────────────────────────
-// La lista es del National Hardware Show y trae muchos fabricantes OEM del exterior: el template
-// first_short (pide wholesale price list con UPCs y pedidos mensuales) no les aplica, y mandarles
-// en frío genera bounces y marcas de spam. Se importan igual, pero marcados como no elegibles.
-// Las listas van acá arriba para poder ajustarlas sin tocar la lógica.
-
-/** TLDs que damos por no-US para este propósito. */
-const NON_US_TLDS = new Set(["cn", "tw", "in", "hk", "kr", "vn", "pk", "tr", "ru"]);
-
-/** Webmails de uso mayoritariamente asiático. */
-const NON_US_WEBMAIL = new Set([
-  "163.com",
-  "126.com",
-  "qq.com",
-  "foxmail.com",
-  "sina.com",
-  "aliyun.com",
-  "naver.com",
-]);
-
-type IneligibleReason =
-  | "sin email"
-  | "teléfono internacional"
-  | "TLD no-US"
-  | "webmail no-US"
-  | "teléfono no-NANP";
-
-const ALL_REASONS: IneligibleReason[] = [
-  "sin email",
-  "teléfono internacional",
-  "TLD no-US",
-  "webmail no-US",
-  "teléfono no-NANP",
-];
-
-/** Formato del North American Numbering Plan: código de área y central arrancan en [2-9]. */
-const NANP_RE = /^[2-9]\d{2}[2-9]\d{6}$/;
-
-/** Teclado telefónico: ABC→2, DEF→3, ... WXYZ→9. Para los números vanity (1-800-GO-FEDEX). */
-const KEYPAD: Record<string, string> = {};
-for (const [digit, letters] of Object.entries({
-  "2": "ABC",
-  "3": "DEF",
-  "4": "GHI",
-  "5": "JKL",
-  "6": "MNO",
-  "7": "PQRS",
-  "8": "TUV",
-  "9": "WXYZ",
-})) {
-  for (const letter of letters) KEYPAD[letter] = digit;
-}
-
-/**
- * Separadores de "varios números en un mismo campo": barra, coma, "or", "ext"/"extension", una
- * "x" que precede dígitos (extensión), o doble espacio. La "x" se chequea después de "ext" para
- * que "ext 215" no se parta por la x del medio, y solo cuando la siguen dígitos, para no romper
- * palabras vanity que contienen X (IPOXI).
- */
-const PHONE_SPLIT_RE = /\s*(?:\/|,|\bor\b|ext(?:ension)?\.?|x(?=\s*\d)|\s{2,})\s*/i;
-
-/**
- * Las dos lecturas posibles de un fragmento: letras mapeadas al teclado (vanity) y letras
- * descartadas. Probar las dos evita que un prefijo de texto ("Tel: 908-...") se convierta en
- * dígitos basura y tumbe un número que en realidad es válido.
- */
-function phoneReadings(fragment: string): string[] {
-  const upper = fragment.toUpperCase();
-  const vanity = upper
-    .split("")
-    .map((ch) => (/\d/.test(ch) ? ch : (KEYPAD[ch] ?? "")))
-    .join("");
-  const digitsOnly = upper.replace(/\D/g, "");
-  return vanity === digitsOnly ? [digitsOnly] : [vanity, digitsOnly];
-}
-
-/**
- * true si el teléfono contradice el formato US/Canadá. Sin teléfono NO penaliza: el criterio
- * castiga el dato que contradice, no el dato faltante. Atrapa a los fabricantes asiáticos que
- * escriben el código de país sin "+" (86-579-..., 886-4-..., 13901574565).
- *
- * El campo se parte en fragmentos y alcanza con que UNO sea NANP válido: en la lista hay vanity
- * numbers ("888-908-BUGS"), extensiones ("877-311-2287 X101") y dos números en el mismo campo
- * ("877 864-2201 or 310 952-9000"). Los fragmentos cortos (una extensión suelta) se descartan en
- * silencio en vez de invalidar al conjunto.
- */
-function isNonNanpPhone(phone: string): boolean {
-  if (!/\d/.test(phone)) return false;
-  for (const fragment of phone.split(PHONE_SPLIT_RE)) {
-    for (const digits of phoneReadings(fragment)) {
-      if (!digits) continue;
-      const core = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
-      if (NANP_RE.test(core)) return false;
-    }
-  }
-  return true;
-}
-
-/** Último label del host: "www.acme.com.cn" → "cn". "" si no se puede determinar. */
-function tld(host: string): string {
-  const clean = host
-    .toLowerCase()
-    .replace(/^[a-z]+:\/\//, "")
-    .replace(/^www\./, "")
-    .split(/[/?#]/)[0]
-    .replace(/\.$/, "");
-  const parts = clean.split(".");
-  return parts.length > 1 ? parts[parts.length - 1] : "";
-}
-
-/**
- * Motivos por los que un proveedor NO es candidato al envío automático, en el orden del plan.
- * Vacío = elegible. Se devuelven todos los que aplican (el primero es el que se reporta).
- */
-function ineligibleReasons(row: {
-  email: string;
-  phone: string;
-  website: string;
-}): IneligibleReason[] {
-  const reasons: IneligibleReason[] = [];
-  if (!EMAIL_RE.test(row.email)) reasons.push("sin email");
-
-  // Prefijo internacional distinto de +1 (también en notación 00 + código de país).
-  const phone = row.phone.replace(/[\s()-]/g, "");
-  if ((/^\+/.test(phone) && !/^\+1/.test(phone)) || (/^00/.test(phone) && !/^001/.test(phone))) {
-    reasons.push("teléfono internacional");
-  }
-
-  const emailDomain = row.email.toLowerCase().split("@")[1] ?? "";
-  if (NON_US_TLDS.has(tld(row.website)) || NON_US_TLDS.has(tld(emailDomain))) {
-    reasons.push("TLD no-US");
-  }
-  if (NON_US_WEBMAIL.has(emailDomain)) reasons.push("webmail no-US");
-  if (isNonNanpPhone(row.phone)) reasons.push("teléfono no-NANP");
-
-  return reasons;
 }
 
 type ParsedProvider = Omit<Provider, "id" | "createdAt" | "updatedAt">;
@@ -330,6 +197,36 @@ async function main() {
   console.log(`Nuevos a importar: ${toImport.length}`);
   console.log(`  con email válido → contactMethod "Email": ${withEmail.length}`);
   console.log(`  sin email → contactMethod "Web": ${toImport.length - withEmail.length}`);
+
+  // ── Paso posterior: chequeo de MX ─────────────────────────────────────────
+  // El heurístico de lib/outreachEligibility.ts es puro y no toca la red. Esto sí: un dominio sin
+  // registro MX no recibe correo, así que ese envío es un rebote duro garantizado y se gastaría
+  // contra el 5% que tolera el cortacircuito. Se corre acá para que cualquier lista futura entre
+  // ya filtrada, en vez de descubrirlo cuando empiezan a volver los rebotes.
+  //
+  // Un fallo transitorio de DNS no marca a nadie (ver lib/mxCheck.ts): se reporta y listo.
+  const mxCandidates = toImport.filter(([, p]) => p.outreachEligible && p.email !== "");
+  const mxDomains = [
+    ...new Set(mxCandidates.map(([, p]) => domainOf(p.email)).filter(Boolean)),
+  ];
+  let mxMarked = 0;
+  if (mxDomains.length > 0) {
+    console.log(`
+Chequeo de MX sobre ${mxDomains.length} dominios de los elegibles…`);
+    const verdicts = await resolveDomains(mxDomains);
+    const dead = new Set(
+      [...verdicts].filter(([, v]) => v === "sin-mx").map(([d]) => d),
+    );
+    const transient = [...verdicts.values()].filter((v) => v === "error-transitorio").length;
+    for (const [, p] of mxCandidates) {
+      if (!dead.has(domainOf(p.email))) continue;
+      p.outreachEligible = false;
+      p.sendError = "dominio sin registro MX";
+      mxMarked++;
+    }
+    console.log(`  dominios sin MX: ${dead.size} → ${mxMarked} proveedores marcados no elegibles`);
+    console.log(`  errores transitorios de DNS: ${transient} (no marcan a nadie)`);
+  }
 
   const eligible = toImport.filter(([, p]) => p.outreachEligible);
   const ineligible = toImport.filter(([, p]) => !p.outreachEligible);

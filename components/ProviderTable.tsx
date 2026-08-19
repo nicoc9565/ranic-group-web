@@ -1,8 +1,10 @@
 "use client";
 
+import { contactStage } from "@/lib/contactStage";
 import { FOLLOWUP_DAYS, followUpStatus, nextFollowUpDate } from "@/lib/followup";
 import { formatDate } from "@/lib/format";
 import type { Provider } from "@/lib/types";
+import { ContactStageBadge } from "./ContactStageBadge";
 import { StatusBadge } from "./StatusBadge";
 
 const NEXT_TEXT = {
@@ -51,7 +53,7 @@ export function ProviderTable({
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-line">
-            {["Empresa", "Contacto", "Categoría", "Estado", "Score", "Próximo"].map((h) => (
+            {["Empresa", "Contacto", "Categoría", "Contacto auto.", "Estado", "Score", "Próximo"].map((h) => (
               <th
                 key={h}
                 className="px-4 py-2.5 font-eyebrow text-[10px] uppercase tracking-[0.15em] text-ink-soft"
@@ -71,6 +73,11 @@ export function ProviderTable({
               <td className="px-4 py-3 font-medium text-ink">{p.company}</td>
               <td className="px-4 py-3 text-ink-soft">{p.contact || "—"}</td>
               <td className="px-4 py-3 text-ink-soft">{p.category}</td>
+              {/* Etapa observada por el programa, al lado del status que maneja Nico a mano.
+                  Se muestran las dos: dicen cosas distintas a propósito. */}
+              <td className="px-4 py-3">
+                <ContactStageBadge stage={contactStage(p, today)} />
+              </td>
               <td className="px-4 py-3">
                 <StatusBadge status={p.status} />
               </td>

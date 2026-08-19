@@ -3,11 +3,17 @@
 // SDK (Task 8). Rotación por replyCheckedAt (Task 12): revisa los BATCH_SIZE más viejos por
 // corrida, nunca todos, para no pasarse del timeout serverless a medida que crece el volumen.
 //
-// Por qué clasifica y no solo cuenta mensajes: Gmail entrega el aviso de rebote de mailer-daemon
-// DENTRO del hilo original, así que "el hilo tiene más de un mensaje" marcaría como interés del
-// proveedor una dirección que no existe (Task 14).
+// Por qué clasifica y no solo cuenta mensajes: "el hilo tiene más de un mensaje" no distingue
+// interés del proveedor de una dirección que no existe (Task 14).
+//
+// Corrección de una premisa falsa que este archivo afirmaba hasta hoy: Gmail NO entrega el DSN
+// dentro del hilo original. La prueba real con un rebote auténtico lo dejó en un hilo aparte
+// (1a011835f8a4084b vs 1a0118359093412c del envío), así que la primera versión de esta lógica era
+// inerte con todos los tests en verde. Por eso los rebotes se recuperan del buzón con
+// listRecentBounces y se correlacionan por dirección, no por thread.
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
+import { computeBucket } from "../../../../lib/contactStage";
 import { adminDb } from "../../../../lib/firebaseAdmin";
 import { inspectThread, listRecentBounces } from "../../../../lib/gmail";
 import { recordBounceAdmin } from "../../../../lib/outreachConfigAdmin";
@@ -48,6 +54,7 @@ export async function POST(req: Request) {
     const patch: Record<string, unknown> = { replyCheckedAt: now };
 
     if (!p.gmailThreadId) {
+      // Solo toca replyCheckedAt, que no participa de la escalera: no hace falta recalcular.
       await adminDb().collection("providers").doc(p.id).update(patch);
       continue;
     }
@@ -58,13 +65,25 @@ export async function POST(req: Request) {
 
     const { state } = await inspectThread(p.gmailThreadId);
 
-    if (state === "respuesta" && !alreadyNoted(REPLY_NOTE_TEXT)) {
-      patch.notes = FieldValue.arrayUnion(note(REPLY_NOTE_TEXT));
-      patch.updatedAt = now;
-      flagged++;
+    if (state === "respuesta") {
+      if (!alreadyNoted(REPLY_NOTE_TEXT)) {
+        patch.notes = FieldValue.arrayUnion(note(REPLY_NOTE_TEXT));
+        patch.updatedAt = now;
+        flagged++;
+      }
+      // Guard propio, no colgado del de la nota: un proveedor detectado antes del backfill tiene
+      // la nota vieja sin el campo, y este es el que se lo escribe. Solo si venía en null, así
+      // que el timestamp queda en la PRIMERA respuesta y no se corre en cada corrida del cron.
+      if (p.replyDetectedAt == null) {
+        patch.replyDetectedAt = now;
+        patch.updatedAt = now;
+      }
     }
 
-    await adminDb().collection("providers").doc(p.id).update(patch);
+    await adminDb()
+      .collection("providers")
+      .doc(p.id)
+      .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
   }
 
   // ── Segunda mitad: rebotes ────────────────────────────────────────────────
@@ -103,6 +122,7 @@ export async function POST(req: Request) {
         // La dirección no existe: fuera del envío automático y fuera del Follow-up Track, que si
         // no le pediría a Nico insistir los días 4, 7 y 12 contra una casilla muerta.
         patch.sendError = bounce.reason;
+        patch.bounceType = "hard";
         patch.outreachEligible = false;
         patch.followUpStopped = true;
         hardBounces++;
@@ -115,10 +135,16 @@ export async function POST(req: Request) {
       } else {
         // Transitorio (buzón lleno, servidor caído): se anota y nada más. No dice nada de la
         // calidad de la lista, así que tampoco suma a la tasa de rebote.
+        // Un "hard" ya escrito no se degrada: la dirección no existe, y que un reintento
+        // posterior devuelva un error transitorio no la resucita.
+        if (p.bounceType !== "hard") patch.bounceType = "soft";
         softBounces++;
       }
 
-      await adminDb().collection("providers").doc(p.id).update(patch);
+      await adminDb()
+        .collection("providers")
+        .doc(p.id)
+        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
     }
   }
 

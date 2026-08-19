@@ -1,6 +1,8 @@
 // Tipos y enums del dominio del CRM de RANIC GROUP.
 // Labels de UI en español; el contenido de los emails (otro módulo) va en inglés.
 
+import type { ContactBucket } from "./contactStage";
+
 export type Category =
   | "Fragancias & Beauty"
   | "Health & Personal Care"
@@ -58,9 +60,27 @@ export type Provider = {
   gmailThreadId?: string | null;
   /** Timestamp del último intento de envío automático (éxito o error). */
   sendAttemptedAt?: number | null;
-  /** Motivo de un envío automático fallido (bounce, dirección inválida, etc.). null si no falló. */
+  /**
+   * Motivo de un envío automático que se INTENTÓ y falló (rechazo del servidor remoto, rebote
+   * duro). null si no falló. Lo escriben el catch de send-batch y el rebote duro de check-replies.
+   */
   sendError?: string | null;
-  /** Origen del proveedor, para auditoría. Ausente = cargado a mano antes de esta feature. */
+  /**
+   * Motivo por el que quedó fuera del envío automático SIN haberse intentado nunca.
+   * Distinto de sendError, que es un intento que falló.
+   *
+   * Estaban mezclados: la tabla de "envíos fallidos" mostraba 15 filas, 14 de las cuales eran
+   * exclusiones previas de MX, y el único fallo real quedaba sepultado abajo de ellas.
+   */
+  excludedReason?: string | null;
+  /**
+   * Origen del proveedor, para auditoría.
+   *
+   * "expo-west-import" quedó SIN USO: los 112 prospectos de expoProspects no tenían una sola
+   * dirección de email, así que se descartó migrarlos. Se deja igual porque el guard de outreach
+   * frío en lib/followup.ts ya lo contempla y sacarlo obliga a volver a tocar esa función para
+   * nada. Si algún día aparecen los contactos, el valor está listo.
+   */
   source?:
     | "expo-outreach-import"
     | "expo-west-import"
@@ -80,6 +100,33 @@ export type Provider = {
    * orderBy los docs que no tienen el campo, así que sin ese 0 el proveedor nunca se chequearía.
    */
   replyCheckedAt?: number;
+  /**
+   * Timestamp de la respuesta detectada por el cron. null = todavía no respondió.
+   * Reemplaza el match por string contra las notas, que era frágil: cualquier retoque al texto
+   * de la nota rompía silenciosamente el conteo de respuestas del panel.
+   */
+  replyDetectedAt?: number | null;
+  /**
+   * Clasificación del rebote (ver lib/bounceClassification.ts). Un "hard" no se degrada nunca
+   * a "soft": la dirección no existe, y que un reintento posterior dé un error transitorio no
+   * la resucita.
+   */
+  bounceType?: "hard" | "soft" | null;
+  /** company.toLowerCase(), para búsqueda y orden sin traerse el documento entero a memoria. */
+  companyLower?: string;
+  /**
+   * Etapa de contacto ya resuelta (ver lib/contactStage.ts). Es un CACHE: la fuente de verdad es
+   * computeBucket(). Existe porque la escalera de precedencia no se puede expresar como filtros
+   * de Firestore, y sin él una query por etapa haría que los grupos se pisen y los contadores no
+   * sumen el total.
+   *
+   * No incluye "sin-respuesta": esa depende del paso del tiempo y un campo persistido se quedaría
+   * viejo solo. Se resuelve en la query comparando firstContactDate contra el corte.
+   *
+   * Hay que recalcularlo en TODO camino que toque blacklisted, optedOut, excludedReason, status,
+   * bounceType, replyDetectedAt o firstContactDate.
+   */
+  bucket?: ContactBucket;
   notes: NoteEntry[];
   createdAt: number;
   updatedAt: number;
@@ -112,6 +159,12 @@ export type BlacklistEntry = {
   name: string;
 };
 
+/**
+ * Prospectos de Expo West. La pantalla, lib/expo.ts y el importador se borraron: la colección
+ * entera venía sin emails y sin websites, así que migrarlos a `providers` solo habría agregado
+ * 112 filas incontactables. La colección `expoProspects` sigue INTACTA en Firestore como
+ * respaldo, y este tipo es lo único que queda documentando su forma.
+ */
 export type ExpoProspect = {
   id: string;
   company: string;
