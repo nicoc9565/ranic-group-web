@@ -48,6 +48,12 @@ export function noReplyCutoff(today: Date): string {
  * `daysSince > NO_REPLY_DAYS` es sin-respuesta, o sea que el día 14 clavado todavía es contactado.
  * Traducido a fechas: firstContactDate >= corte es contactado, < corte es sin-respuesta. Si esto
  * se corriera un día, un proveedor aparecería en una etapa en la tabla y en otra en su ficha.
+ *
+ * El orden es ASCENDENTE (más viejo primero) y no es una preferencia estética: Firestore NO reusa
+ * un índice ascendente para un orderBy descendente cuando hay igualdades adelante, así que un
+ * `desc` acá pediría dos índices más, con la sola diferencia de la dirección. Y ascendente es
+ * además el orden útil en las dos etapas: en sin-respuesta son los más rancios, y en contactado
+ * los que están por cruzar el corte.
  */
 function stageConstraints(
   stage: ContactStage,
@@ -62,7 +68,7 @@ function stageConstraints(
       where("bucket", "==", "contactado"),
       ...cat,
       where("firstContactDate", ">=", cutoff),
-      orderBy("firstContactDate", "desc"),
+      orderBy("firstContactDate", "asc"),
     ];
   }
   if (stage === "sin-respuesta") {
@@ -70,7 +76,7 @@ function stageConstraints(
       where("bucket", "==", "contactado"),
       ...cat,
       where("firstContactDate", "<", cutoff),
-      orderBy("firstContactDate", "desc"),
+      orderBy("firstContactDate", "asc"),
     ];
   }
   return [where("bucket", "==", stage), ...cat, orderBy("companyLower", "asc")];
