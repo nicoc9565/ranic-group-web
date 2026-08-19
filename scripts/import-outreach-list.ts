@@ -18,6 +18,7 @@ import {
   getDocs,
   writeBatch,
 } from "firebase/firestore";
+import { computeBucket } from "../lib/contactStage";
 import { auth, db } from "../lib/firebase";
 import { domainOf, resolveDomains } from "../lib/mxCheck";
 import {
@@ -288,7 +289,13 @@ Chequeo de MX sobre ${mxDomains.length} dominios de los elegibles…`);
   for (let i = 0; i < toImport.length; i += CHUNK) {
     const batch = writeBatch(db);
     for (const [key, p] of toImport.slice(i, i + CHUNK)) {
-      batch.set(doc(db, "providers", key), { ...p, createdAt: now, updatedAt: now });
+      // bucket se calcula acá: el doc se construye entero, no hace falta leer nada.
+      batch.set(doc(db, "providers", key), {
+        ...p,
+        bucket: computeBucket(p as Provider),
+        createdAt: now,
+        updatedAt: now,
+      });
     }
     await batch.commit();
   }

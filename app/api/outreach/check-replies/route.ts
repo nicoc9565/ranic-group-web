@@ -13,10 +13,15 @@
 // listRecentBounces y se correlacionan por dirección, no por thread.
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
-import { computeBucket } from "../../../../lib/contactStage";
+import { withBucket } from "../../../../lib/contactStage";
 import { adminDb } from "../../../../lib/firebaseAdmin";
 import { inspectThread, listRecentBounces } from "../../../../lib/gmail";
 import { recordBounceAdmin } from "../../../../lib/outreachConfigAdmin";
+import {
+  hardBouncePatch,
+  replyDetectedPatch,
+  softBouncePatch,
+} from "../../../../lib/outreachPatches";
 import type { NoteEntry, Provider } from "../../../../lib/types";
 
 const REPLY_NOTE_TEXT = "Respuesta detectada — revisar Gmail.";
@@ -72,18 +77,14 @@ export async function POST(req: Request) {
         flagged++;
       }
       // Guard propio, no colgado del de la nota: un proveedor detectado antes del backfill tiene
-      // la nota vieja sin el campo, y este es el que se lo escribe. Solo si venía en null, así
-      // que el timestamp queda en la PRIMERA respuesta y no se corre en cada corrida del cron.
-      if (p.replyDetectedAt == null) {
-        patch.replyDetectedAt = now;
-        patch.updatedAt = now;
-      }
+      // la nota vieja sin el campo, y este es el que se lo escribe.
+      Object.assign(patch, replyDetectedPatch(p, now));
     }
 
     await adminDb()
       .collection("providers")
       .doc(p.id)
-      .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
+      .update(withBucket(p, patch));
   }
 
   // ── Segunda mitad: rebotes ────────────────────────────────────────────────
@@ -119,12 +120,7 @@ export async function POST(req: Request) {
       };
 
       if (bounce.state === "rebote-duro") {
-        // La dirección no existe: fuera del envío automático y fuera del Follow-up Track, que si
-        // no le pediría a Nico insistir los días 4, 7 y 12 contra una casilla muerta.
-        patch.sendError = bounce.reason;
-        patch.bounceType = "hard";
-        patch.outreachEligible = false;
-        patch.followUpStopped = true;
+        Object.assign(patch, hardBouncePatch({ now, reason: bounce.reason }));
         hardBounces++;
         // El contador sube una vez por DSN, no por proveedor: si un DSN matchea dos, la tasa se
         // distorsionaría hacia arriba justo cuando el cortacircuito la está mirando.
@@ -133,18 +129,14 @@ export async function POST(req: Request) {
           countedThisBounce = true;
         }
       } else {
-        // Transitorio (buzón lleno, servidor caído): se anota y nada más. No dice nada de la
-        // calidad de la lista, así que tampoco suma a la tasa de rebote.
-        // Un "hard" ya escrito no se degrada: la dirección no existe, y que un reintento
-        // posterior devuelva un error transitorio no la resucita.
-        if (p.bounceType !== "hard") patch.bounceType = "soft";
+        Object.assign(patch, softBouncePatch(p, { now }));
         softBounces++;
       }
 
       await adminDb()
         .collection("providers")
         .doc(p.id)
-        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
+        .update(withBucket(p, patch));
     }
   }
 

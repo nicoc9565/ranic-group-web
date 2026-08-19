@@ -103,6 +103,24 @@ export function contactStage(p: Provider, today: Date): ContactStage {
     : "contactado";
 }
 
+/**
+ * Devuelve el patch con `bucket` recalculado sobre el documento YA PARCHEADO.
+ *
+ * TODO write a `providers` que toque un campo de la escalera tiene que pasar por acá. Existe como
+ * función y no como línea suelta repetida en cada cron por dos razones: la escalera no se replica
+ * en ningún lado (se llama a computeBucket), y hay un solo nombre que grepear para auditar que no
+ * quedó un write afuera.
+ *
+ * Si esto se olvida en algún camino, el proveedor cambia de etapa en los datos pero no en el
+ * campo, y desaparece de la pantalla sin ningún error: la query filtra por `bucket`.
+ */
+export function withBucket<T extends Record<string, unknown>>(
+  current: Partial<Provider>,
+  patch: T,
+): T & { bucket: ContactBucket } {
+  return { ...patch, bucket: computeBucket({ ...current, ...patch } as Provider) };
+}
+
 export const CONTACT_STAGE_LABELS: Record<ContactStage, string> = {
   "sin-contactar": "Sin contactar",
   contactado: "Contactado",

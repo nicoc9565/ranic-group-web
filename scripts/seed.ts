@@ -18,6 +18,8 @@ import {
   getCountFromServer,
   writeBatch,
 } from "firebase/firestore";
+import { computeBucket } from "../lib/contactStage";
+import type { Provider } from "../lib/types";
 import { auth, db } from "../lib/firebase";
 import type { Category, Status } from "../lib/types";
 
@@ -170,8 +172,9 @@ async function main() {
 
   const pBatch = writeBatch(db);
   for (const p of PROVIDERS) {
-    pBatch.set(doc(db, "providers", slug(p.company)), {
+    const provider = {
       company: p.company,
+      companyLower: p.company.toLowerCase(),
       contact: p.contact,
       email: p.email,
       category: p.category,
@@ -181,7 +184,15 @@ async function main() {
       firstContactDate: p.lastEmailDate,
       lastEmailDate: p.lastEmailDate,
       followUpStep: 0,
+      source: "manual" as const,
       notes: [{ date: p.lastEmailDate, text: p.note }],
+    };
+    // companyLower, source y bucket son los campos derivados de los que dependen la búsqueda, la
+    // sección de follow-ups del Dashboard y el filtro por etapa. Un seed que no los escriba deja
+    // proveedores invisibles en la pantalla sin ningún error.
+    pBatch.set(doc(db, "providers", slug(p.company)), {
+      ...provider,
+      bucket: computeBucket(provider as unknown as Provider),
       createdAt: now,
       updatedAt: now,
     });

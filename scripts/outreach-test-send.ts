@@ -22,6 +22,7 @@
  * Flag opcional --base <url> (default http://localhost:3000) para apuntar a producción.
  */
 import "./env";
+import { computeBucket, withBucket } from "../lib/contactStage";
 import { adminDb } from "../lib/firebaseAdmin";
 import { getOutreachConfigAdmin } from "../lib/outreachConfigAdmin";
 import type { OutreachConfig, Provider } from "../lib/types";
@@ -90,7 +91,12 @@ async function create() {
     createdAt: now,
     updatedAt: now,
   };
-  await adminDb().collection("providers").doc(id).set(doc);
+  // El doc se crea entero acá, así que computeBucket no necesita leer nada. Sin este campo el
+  // proveedor de prueba no aparecería en ninguna etapa de la pantalla.
+  await adminDb()
+    .collection("providers")
+    .doc(id)
+    .set({ ...doc, bucket: computeBucket(doc as unknown as Provider) });
   console.log(`✓ Proveedor de prueba creado: ${id} → ${email}`);
 }
 
@@ -195,8 +201,12 @@ async function main() {
       return;
     }
     case "optout": {
-      await adminDb().collection("providers").doc(requireId()).update({ optedOut: true });
-      console.log("✓ optedOut → true");
+      // optedOut es el peldaño 1 de la escalera: hay que releer el doc para recalcular el bucket.
+      // Es una lectura por corrida de un comando manual, no cuesta nada.
+      const ref = adminDb().collection("providers").doc(requireId());
+      const p = { id: ref.id, ...((await ref.get()).data() as Omit<Provider, "id">) };
+      await ref.update(withBucket(p, { optedOut: true }));
+      console.log("✓ optedOut → true (bucket:", computeBucket({ ...p, optedOut: true }), ")");
       return;
     }
     default:
