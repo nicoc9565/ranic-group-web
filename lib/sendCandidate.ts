@@ -26,9 +26,20 @@ export const SEND_CANDIDATE_FILTERS = [
 /**
  * Versión en memoria del mismo criterio, para tests.
  *
- * Usa `===` estricto para que coincida con Firestore: `where(campo, "==", null)` matchea los
- * documentos con el campo en null pero NO los que no lo tienen, igual que `undefined === null`
- * da false acá.
+ * ── QUÉ NO PRUEBA ──────────────────────────────────────────────────────────────────────────
+ * Evalúa un objeto en memoria: NO modela cómo Firestore descarta los documentos a los que les
+ * FALTA un campo. Dos documentos que esta función clasifica igual pueden diferir en la query
+ * real si a uno le falta alguno de los seis campos — Firestore no lo devuelve, y acá el `===`
+ * contra `undefined` puede dar cualquiera de las dos cosas según el valor esperado.
+ *
+ * Sirve para testear la lógica de los filtros: que marcar a un proveedor lo saque del conjunto,
+ * que cada filtro discrimine. NO sirve para predecir qué va a devolver la query, ni para
+ * afirmar que un documento concreto va a entrar en la próxima tanda. Eso solo lo dice correr
+ * la query.
+ *
+ * El único caso que sí coincide por construcción es `sendAttemptedAt == null`: Firestore matchea
+ * los documentos con el campo en null pero no los que no lo tienen, igual que `undefined === null`
+ * da false acá. Es una coincidencia útil, no una garantía general.
  */
 export function isSendCandidate(p: Partial<Provider>): boolean {
   return SEND_CANDIDATE_FILTERS.every(
