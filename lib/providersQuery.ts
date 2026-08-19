@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { NO_REPLY_DAYS, type ContactStage } from "./contactStage";
 import { db } from "./firebase";
-import type { Provider } from "./types";
+import type { Category, Provider } from "./types";
 
 /**
  * Consultas server-side de la pantalla de Proveedores.
@@ -49,10 +49,18 @@ export function noReplyCutoff(today: Date): string {
  * Traducido a fechas: firstContactDate >= corte es contactado, < corte es sin-respuesta. Si esto
  * se corriera un día, un proveedor aparecería en una etapa en la tabla y en otra en su ficha.
  */
-function stageConstraints(stage: ContactStage, cutoff: string): QueryConstraint[] {
+function stageConstraints(
+  stage: ContactStage,
+  cutoff: string,
+  category: Category | "",
+): QueryConstraint[] {
+  // Firestore indexa por CAMPO, no por valor: `category` es un filtro de igualdad, así que un
+  // solo índice (bucket, category, …) cubre las ocho categorías.
+  const cat = category ? [where("category", "==", category)] : [];
   if (stage === "contactado") {
     return [
       where("bucket", "==", "contactado"),
+      ...cat,
       where("firstContactDate", ">=", cutoff),
       orderBy("firstContactDate", "desc"),
     ];
@@ -60,11 +68,12 @@ function stageConstraints(stage: ContactStage, cutoff: string): QueryConstraint[
   if (stage === "sin-respuesta") {
     return [
       where("bucket", "==", "contactado"),
+      ...cat,
       where("firstContactDate", "<", cutoff),
       orderBy("firstContactDate", "desc"),
     ];
   }
-  return [where("bucket", "==", stage), orderBy("companyLower", "asc")];
+  return [where("bucket", "==", stage), ...cat, orderBy("companyLower", "asc")];
 }
 
 /**
@@ -93,21 +102,28 @@ export const ALL_STAGES: ContactStage[] = [
 ];
 
 /**
- * Los 7 contadores por etapa más el total.
+ * Los 7 contadores por etapa más el total, respetando el filtro de categoría.
  *
  * count() se factura 1 lectura cada 1000 entradas de índice, así que los ocho juntos cuestan del
  * orden de 20 lecturas contra las 2502 de bajar la colección.
+ *
+ * Los contadores usan EXACTAMENTE los mismos filtros que la tabla. Si mostraran el total sin
+ * categoría mientras la tabla filtra, el número de arriba contradiría a las filas de abajo.
  */
 export async function countByStage(
   today: Date,
+  category: Category | "" = "",
 ): Promise<{ total: number; byStage: Record<ContactStage, number> }> {
   const cutoff = noReplyCutoff(today);
+  const totalQuery = category
+    ? query(providersCol(), where("category", "==", category))
+    : query(providersCol());
   const [total, ...counts] = await Promise.all([
-    getCountFromServer(providersCol()).then((s) => s.data().count),
+    getCountFromServer(totalQuery).then((s) => s.data().count),
     ...ALL_STAGES.map((stage) =>
-      getCountFromServer(query(providersCol(), ...stageConstraints(stage, cutoff))).then(
-        (s) => s.data().count,
-      ),
+      getCountFromServer(
+        query(providersCol(), ...stageConstraints(stage, cutoff, category)),
+      ).then((s) => s.data().count),
     ),
   ]);
   const byStage = Object.fromEntries(
@@ -126,27 +142,31 @@ export type ProviderPage = {
  * Una página de proveedores de una etapa.
  *
  * La búsqueda por prefijo y el corte temporal usan campos distintos, así que no se pueden combinar
- * en la misma query sin un índice por cada par. Cuando hay búsqueda dentro de contactado o
- * sin-respuesta se consulta el bucket completo y el corte se aplica sobre la página traída: son
- * como mucho PAGE_SIZE filas, y el resultado es el mismo.
+ * en la misma query. Cuando hay búsqueda dentro de contactado o sin-respuesta se consulta el
+ * bucket completo y el corte se aplica sobre la página traída: son como mucho PAGE_SIZE filas y el
+ * resultado es el mismo. La categoría sí va siempre server-side — es igualdad y entra en el índice.
  */
 export async function fetchProviderPage(opts: {
   stage: ContactStage;
   search: string;
+  category: Category | "";
   today: Date;
   cursor?: DocumentSnapshot | null;
 }): Promise<ProviderPage> {
-  const { stage, search, today, cursor } = opts;
+  const { stage, search, category, today, cursor } = opts;
   const cutoff = noReplyCutoff(today);
   const searching = search.trim() !== "";
   const temporal = stage === "contactado" || stage === "sin-respuesta";
+  const cat = category ? [where("category", "==", category)] : [];
 
-  const constraints: QueryConstraint[] =
-    searching && temporal
-      ? [where("bucket", "==", "contactado"), ...searchConstraints(search), orderBy("companyLower", "asc")]
-      : searching
-        ? [where("bucket", "==", stage), ...searchConstraints(search), orderBy("companyLower", "asc")]
-        : stageConstraints(stage, cutoff);
+  const constraints: QueryConstraint[] = searching
+    ? [
+        where("bucket", "==", temporal ? "contactado" : stage),
+        ...cat,
+        ...searchConstraints(search),
+        orderBy("companyLower", "asc"),
+      ]
+    : stageConstraints(stage, cutoff, category);
 
   const snap = await getDocs(
     query(

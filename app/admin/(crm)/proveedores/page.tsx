@@ -22,11 +22,9 @@ import {
 } from "@/lib/providersQuery";
 import {
   CATEGORIES,
-  STATUSES,
   type BlacklistEntry,
   type Category,
   type Provider,
-  type Status,
 } from "@/lib/types";
 import type { DocumentSnapshot } from "firebase/firestore";
 
@@ -38,7 +36,6 @@ export default function ProveedoresPage() {
 
   const [stage, setStage] = useState<ContactStage>("sin-contactar");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Status | "">("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "">("");
 
   const [rows, setRows] = useState<Provider[]>([]);
@@ -65,13 +62,13 @@ export default function ProveedoresPage() {
   // Los contadores se piden una vez al montar: son 8 agregaciones, del orden de 20 lecturas.
   useEffect(() => {
     let cancelled = false;
-    countByStage(today).then((c) => {
+    countByStage(today, categoryFilter).then((c) => {
       if (!cancelled) setCounts(c);
     });
     return () => {
       cancelled = true;
     };
-  }, [today]);
+  }, [today, categoryFilter]);
 
   // Debounce de la busqueda: sin esto cada tecla dispara una query a Firestore.
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -85,21 +82,26 @@ export default function ProveedoresPage() {
   // `loading` se DERIVA de comparar la consulta pedida contra la ultima que respondio, en vez de
   // ser un estado que se prende a mano al entrar al effect. Ademas de evitar el setState
   // sincrono, no puede quedarse colgado en true si una respuesta se descarta por cancelled.
-  const queryKey = `${stage}|${debouncedSearch}`;
+  const queryKey = `${stage}|${debouncedSearch}|${categoryFilter}`;
   const loading = loadedKey !== queryKey;
 
   useEffect(() => {
     let cancelled = false;
-    fetchProviderPage({ stage, search: debouncedSearch, today }).then((page) => {
+    fetchProviderPage({
+      stage,
+      search: debouncedSearch,
+      category: categoryFilter,
+      today,
+    }).then((page) => {
       if (cancelled) return;
       setRows(page.rows);
       setCursor(page.cursor);
-      setLoadedKey(`${stage}|${debouncedSearch}`);
+      setLoadedKey(`${stage}|${debouncedSearch}|${categoryFilter}`);
     });
     return () => {
       cancelled = true;
     };
-  }, [stage, debouncedSearch, today]);
+  }, [stage, debouncedSearch, categoryFilter, today]);
 
   const loadingMore = useRef(false);
   const loadMore = useCallback(async () => {
@@ -109,6 +111,7 @@ export default function ProveedoresPage() {
       const page = await fetchProviderPage({
         stage,
         search: debouncedSearch,
+        category: categoryFilter,
         today,
         cursor,
       });
@@ -117,7 +120,7 @@ export default function ProveedoresPage() {
     } finally {
       loadingMore.current = false;
     }
-  }, [cursor, stage, debouncedSearch, today]);
+  }, [cursor, stage, debouncedSearch, categoryFilter, today]);
 
   // El proveedor abierto se DERIVA, no se sincroniza con un effect: si esta en la pagina cargada
   // se usa esa copia (que se refresca sola al recargar), y si no, la que se trajo por id.
@@ -138,23 +141,6 @@ export default function ProveedoresPage() {
     };
   }, [detailId, rows]);
 
-  /**
-   * Estado y categoria filtran las filas YA CARGADAS, no la query.
-   *
-   * Hacerlos server-side pediria un indice compuesto por cada combinacion de etapa x estado x
-   * categoria, y con el tope diario de Spark no vale la pena: la etapa ya acota a como mucho una
-   * pagina. La UI lo dice explicitamente para que nadie lea un conteo que no es.
-   */
-  const visible = useMemo(
-    () =>
-      rows.filter((p) => {
-        if (statusFilter && p.status !== statusFilter) return false;
-        if (categoryFilter && p.category !== categoryFilter) return false;
-        return true;
-      }),
-    [rows, statusFilter, categoryFilter],
-  );
-
   const editingProvider = editId ? rows.find((p) => p.id === editId) : undefined;
 
   function openNew() {
@@ -170,13 +156,18 @@ export default function ProveedoresPage() {
   /** Tras escribir, la fila puede cambiar de etapa: se recargan pagina y contadores. */
   const refresh = useCallback(async () => {
     const [page, c] = await Promise.all([
-      fetchProviderPage({ stage, search: debouncedSearch, today }),
-      countByStage(today),
+      fetchProviderPage({
+        stage,
+        search: debouncedSearch,
+        category: categoryFilter,
+        today,
+      }),
+      countByStage(today, categoryFilter),
     ]);
     setRows(page.rows);
     setCursor(page.cursor);
     setCounts(c);
-  }, [stage, debouncedSearch, today]);
+  }, [stage, debouncedSearch, categoryFilter, today]);
 
   async function handleSave(values: ProviderFormValues) {
     if (editId) {
@@ -232,19 +223,6 @@ export default function ProveedoresPage() {
           className="min-w-[12rem] flex-1 rounded-control border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none focus:border-olive"
         />
         <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as Status | "")}
-          className={selectCls}
-          aria-label="Filtrar por estado"
-        >
-          <option value="">Todos los estados</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as Category | "")}
           className={selectCls}
@@ -259,18 +237,12 @@ export default function ProveedoresPage() {
         </select>
       </div>
 
-      {(statusFilter || categoryFilter) && (
-        <p className="mb-2 text-xs text-ink-soft">
-          Estado y categoria filtran las {rows.length} filas cargadas, no la etapa completa.
-        </p>
-      )}
-
       {loading ? (
         <p className="font-mono text-sm text-ink-soft">Cargando...</p>
       ) : (
         <>
           <ProviderTable
-            providers={visible}
+            providers={rows}
             today={today}
             onRowClick={(p) => setDetailId(p.id)}
           />
