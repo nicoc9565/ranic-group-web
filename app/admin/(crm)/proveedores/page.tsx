@@ -16,8 +16,10 @@ import {
   addNote,
   addProvider,
   deleteProvider,
+  setBlacklisted,
   updateProvider,
 } from "@/lib/providers";
+import { blacklistPatch } from "@/lib/outreachPatches";
 import {
   ALL_STAGES,
   countByStage,
@@ -174,23 +176,15 @@ export default function ProveedoresPage() {
   }, [stage, debouncedSearch, categoryFilter, today]);
 
   /**
-   * Blacklistear en una sola acción: los cuatro campos del proveedor MÁS la entrada en la
-   * colección `blacklist`, que es la que dispara el aviso al cargar otro proveedor con ese
-   * nombre. Sin la entrada, blacklistear a uno no protege del duplicado.
+   * Blacklistear: el proveedor MÁS la entrada en la colección `blacklist`, que es la que dispara
+   * el aviso al cargar otro proveedor con ese nombre. Sin la entrada, blacklistear a uno no
+   * protege del duplicado.
    *
-   * Los cuatro campos reutilizan los filtros que el sender ya tiene (optedOut == false,
-   * outreachEligible == true), así que el proveedor sale del envío automático sin tocar la
-   * query ni crear índices. Va por updateProvider, que recalcula el bucket.
+   * Los campos del proveedor los escribe setBlacklisted, que es el único camino: acá no se toca
+   * `blacklisted` a mano.
    */
   async function toggleBlacklist(p: Provider, blacklisted: boolean) {
-    await updateProvider(p.id, blacklisted
-      ? {
-          blacklisted: true,
-          optedOut: true,
-          outreachEligible: false,
-          followUpStopped: true,
-        }
-      : { blacklisted: false, optedOut: false, followUpStopped: false });
+    await setBlacklisted(p.id, blacklisted);
 
     const match = blacklist.find(
       (b) => b.name.trim().toLowerCase() === p.company.trim().toLowerCase(),
@@ -201,12 +195,23 @@ export default function ProveedoresPage() {
     await refresh();
   }
 
+  /**
+   * Guardar desde el formulario.
+   *
+   * `blacklisted` se saca del patch general y va por setBlacklisted: marcar son cuatro campos, no
+   * uno, y el checkbox escribiéndolo solo dejaba al proveedor invisible en la pantalla y vivo
+   * para el cron de envío al mismo tiempo.
+   */
   async function handleSave(values: ProviderFormValues) {
+    const { blacklisted, ...rest } = values;
     if (editId) {
-      await updateProvider(editId, values);
+      await updateProvider(editId, rest);
+      const antes = rows.find((p) => p.id === editId)?.blacklisted ?? false;
+      if (blacklisted !== antes) await setBlacklisted(editId, blacklisted);
     } else {
       await addProvider({
-        ...values,
+        ...rest,
+        ...blacklistPatch(blacklisted),
         firstContactDate: null,
         lastEmailDate: null,
         followUpStep: -1,
