@@ -28,6 +28,7 @@ export function ProviderDetail({
   onResumeFollowUp,
   onStartFollowUp,
   onToggleOptOut,
+  onToggleBlacklist,
 }: {
   provider: Provider;
   today: Date;
@@ -38,6 +39,7 @@ export function ProviderDetail({
   onResumeFollowUp: () => Promise<void> | void;
   onStartFollowUp: (patch: Partial<Provider>) => Promise<void> | void;
   onToggleOptOut: (optedOut: boolean) => Promise<void> | void;
+  onToggleBlacklist: (blacklisted: boolean) => Promise<void> | void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [adding, setAdding] = useState(false);
@@ -106,6 +108,28 @@ export function ProviderDetail({
             <span className="block text-sm font-medium text-ink">No contactar más</span>
             <span className="block text-xs text-ink-soft">
               Pidió no recibir más emails. Queda excluido del envío automático.
+            </span>
+          </span>
+        </label>
+
+        {/* Blacklist — una sola acción que además crea la entrada en la colección, para que el
+            aviso al cargar otro proveedor con ese nombre funcione. Escribe blacklisted, que es
+            el primer peldaño de computeBucket: pasa por updateProvider, nunca por un updateDoc
+            suelto, o el bucket persistido queda desincronizado. */}
+        <label className="flex items-start gap-3 rounded-card border border-line bg-stone/50 p-3">
+          <input
+            type="checkbox"
+            checked={!!provider.blacklisted}
+            onChange={(e) => onToggleBlacklist(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-status-overdue"
+          />
+          <span>
+            <span className="block text-sm font-medium text-ink">
+              Marcar como estafa / no contactar
+            </span>
+            <span className="block text-xs text-ink-soft">
+              Lo saca del envío automático y del seguimiento, y agrega la empresa a la
+              blacklist. Destildar deshace las dos cosas.
             </span>
           </span>
         </label>

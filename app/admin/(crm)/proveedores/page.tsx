@@ -5,7 +5,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { ProviderDetail } from "@/components/ProviderDetail";
 import { ProviderForm, type ProviderFormValues } from "@/components/ProviderForm";
 import { ProviderTable } from "@/components/ProviderTable";
-import { subscribeBlacklist } from "@/lib/blacklist";
+import {
+  addBlacklistEntry,
+  removeBlacklistEntry,
+  subscribeBlacklist,
+} from "@/lib/blacklist";
 import { CONTACT_STAGE_LABELS, type ContactStage } from "@/lib/contactStage";
 import { todayISO } from "@/lib/format";
 import {
@@ -169,6 +173,34 @@ export default function ProveedoresPage() {
     setCounts(c);
   }, [stage, debouncedSearch, categoryFilter, today]);
 
+  /**
+   * Blacklistear en una sola acción: los cuatro campos del proveedor MÁS la entrada en la
+   * colección `blacklist`, que es la que dispara el aviso al cargar otro proveedor con ese
+   * nombre. Sin la entrada, blacklistear a uno no protege del duplicado.
+   *
+   * Los cuatro campos reutilizan los filtros que el sender ya tiene (optedOut == false,
+   * outreachEligible == true), así que el proveedor sale del envío automático sin tocar la
+   * query ni crear índices. Va por updateProvider, que recalcula el bucket.
+   */
+  async function toggleBlacklist(p: Provider, blacklisted: boolean) {
+    await updateProvider(p.id, blacklisted
+      ? {
+          blacklisted: true,
+          optedOut: true,
+          outreachEligible: false,
+          followUpStopped: true,
+        }
+      : { blacklisted: false, optedOut: false, followUpStopped: false });
+
+    const match = blacklist.find(
+      (b) => b.name.trim().toLowerCase() === p.company.trim().toLowerCase(),
+    );
+    if (blacklisted && !match) await addBlacklistEntry(p.company);
+    if (!blacklisted && match) await removeBlacklistEntry(match.id);
+
+    await refresh();
+  }
+
   async function handleSave(values: ProviderFormValues) {
     if (editId) {
       await updateProvider(editId, values);
@@ -299,6 +331,9 @@ export default function ProveedoresPage() {
             await updateProvider(detailProvider.id, { optedOut });
             await refresh();
           }}
+          onToggleBlacklist={(blacklisted) =>
+            toggleBlacklist(detailProvider, blacklisted)
+          }
         />
       )}
     </>
