@@ -26,6 +26,7 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
+import { computeBucket } from "../lib/contactStage";
 import { auth, db } from "../lib/firebase";
 import { inferCategory } from "../lib/categoryInference";
 import type { ContactMethod, Provider, Status } from "../lib/types";
@@ -141,7 +142,10 @@ function parseRows(): {
   return { providers, blacklist, skipped };
 }
 
-/** Patchea los proveedores existentes que todavía no tienen los campos nuevos. */
+/**
+ * Patchea los proveedores existentes que todavía no tienen los campos nuevos.
+ * No recalcula `bucket`: contactMethod, phone, address y score no participan de la escalera.
+ */
 async function backfillExisting(): Promise<number> {
   const snap = await getDocs(collection(db, "providers"));
   let patched = 0;
@@ -194,6 +198,9 @@ async function main() {
     for (const [key, p] of entries.slice(i, i + CHUNK)) {
       batch.set(doc(db, "providers", key), {
         ...p,
+        // bucket se calcula acá: el doc se construye entero, no hace falta leer nada. Sin el
+        // campo, el proveedor importado no aparecería en ninguna etapa de la pantalla.
+        bucket: computeBucket(p as Provider),
         createdAt: now,
         updatedAt: now,
       });

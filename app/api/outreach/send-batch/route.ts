@@ -2,10 +2,13 @@
 // cron de Task 11), respetando el límite diario de OutreachConfig. Server-only, usa Admin SDK
 // (ver Task 8) porque no hay sesión de usuario en un cron.
 import { NextResponse } from "next/server";
-import { computeBucket } from "../../../../lib/contactStage";
+import { withBucket } from "../../../../lib/contactStage";
 import { adminDb } from "../../../../lib/firebaseAdmin";
+import {
+  sendFailurePatch,
+  sendSuccessPatch,
+} from "../../../../lib/outreachPatches";
 import { generateOutreachEmail } from "../../../../lib/outreachEmail";
-import { advanceFollowUp } from "../../../../lib/followup";
 import { sendOutreachEmail } from "../../../../lib/gmail";
 import {
   getOutreachConfigAdmin,
@@ -100,34 +103,21 @@ export async function POST(req: Request) {
       const subject = `Wholesale inquiry - ${p.company}`;
       const { threadId } = await sendOutreachEmail(p.email, subject, body);
       const today = new Date().toISOString().slice(0, 10);
-      const patch = {
-        status: "Contactado" as const,
-        gmailThreadId: threadId,
-        sendAttemptedAt: now,
-        sendError: null,
-        // Nunca chequeado. El campo tiene que existir sí o sí: el cron de reply-detection
-        // ordena por él, y Firestore excluye del orderBy a los docs que no lo tienen.
-        replyCheckedAt: 0,
-        updatedAt: now,
-        ...advanceFollowUp(p, today),
-      };
+      const patch = sendSuccessPatch(p, { threadId, now, sentDate: today });
       await adminDb()
         .collection("providers")
         .doc(p.id)
-        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
+        .update(withBucket(p, patch));
       await incrementSentTodayAdmin();
       sent++;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       errors.push(`${p.company}: ${message}`);
-      // El patch NO incluye firstContactDate: advanceFollowUp solo corre en el camino de éxito.
-      // Por eso computeBucket mira firstContactDate y no sendAttemptedAt — este proveedor tiene
-      // que quedar en "sin-contactar", no en un "contactado" sin fecha que la pantalla no vería.
-      const patch = { sendAttemptedAt: now, sendError: message, updatedAt: now };
+      const patch = sendFailurePatch({ now, message });
       await adminDb()
         .collection("providers")
         .doc(p.id)
-        .update({ ...patch, bucket: computeBucket({ ...p, ...patch }) });
+        .update(withBucket(p, patch));
     }
   }
 
