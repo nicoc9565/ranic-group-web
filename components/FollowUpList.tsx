@@ -6,7 +6,7 @@ import { FollowUpTrack } from "@/components/FollowUpTrack";
 import { advanceFollowUp, FOLLOWUP_DAYS, nextFollowUpDate } from "@/lib/followup";
 import { formatDate, todayISO } from "@/lib/format";
 import { updateProvider } from "@/lib/providers";
-import type { EmailType, Provider } from "@/lib/types";
+import type { Provider } from "@/lib/types";
 
 export type FollowUpRow = { p: Provider; s: "overdue" | "today" | "ontrack" };
 
@@ -27,14 +27,6 @@ const StopIcon = () => (
     <path d="M6.5 6.5l11 11" />
   </svg>
 );
-
-/** Tipo de email sugerido para el próximo paso de la secuencia (según followUpStep). */
-function emailTypeForStep(step: number): EmailType {
-  if (step === -1) return "first_short";
-  if (step === 0) return "followup_4";
-  if (step === 1) return "followup_7";
-  return "last_attempt_12";
-}
 
 /**
  * Tarjetas de follow-up. Salieron tal cual de la pantalla /admin/follow-ups, que se fusionó en el
@@ -106,8 +98,10 @@ export function FollowUpList({ rows }: { rows: FollowUpRow[] }) {
               </button>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
+                {/* El generador se mudó adentro de la ficha del proveedor: el link abre el
+                    detalle, donde está el composer con el tipo ya sugerido por followUpStep. */}
                 <Link
-                  href={`/admin/emails?provider=${p.id}&type=${emailTypeForStep(p.followUpStep)}`}
+                  href={`/admin/proveedores?id=${p.id}`}
                   className="shrink-0 rounded-control border border-olive px-3 py-2 text-sm font-medium text-olive transition-colors hover:bg-olive/10"
                 >
                   Redactar email

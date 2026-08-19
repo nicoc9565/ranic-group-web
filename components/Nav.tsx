@@ -22,12 +22,6 @@ const icons = {
       <path d="M3.3 7 12 12l8.7-5M12 22V12" />
     </svg>
   ),
-  emails: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m3 7 9 6 9-6" />
-    </svg>
-  ),
   blacklist: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
       <circle cx="12" cy="12" r="9" />
@@ -55,7 +49,6 @@ const icons = {
 const NAV: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: icons.dashboard },
   { href: "/admin/proveedores", label: "Proveedores", icon: icons.providers },
-  { href: "/admin/emails", label: "Emails", icon: icons.emails },
   { href: "/admin/outreach", label: "Outreach", icon: icons.outreach },
   { href: "/admin/blacklist", label: "Blacklist", icon: icons.blacklist },
   { href: "/admin/finanzas", label: "Finanzas", icon: icons.finanzas },
@@ -140,7 +133,7 @@ export function Nav({
       </header>
 
       {/* Bottom nav — mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-line bg-olive-deep text-olive-tint md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-line bg-olive-deep text-olive-tint md:hidden">
         {NAV.map((item) => {
           const active = isActive(pathname, item.href);
           return (

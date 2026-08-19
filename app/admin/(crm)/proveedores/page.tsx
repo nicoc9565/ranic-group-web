@@ -334,6 +334,10 @@ export default function ProveedoresPage() {
           onToggleBlacklist={(blacklisted) =>
             toggleBlacklist(detailProvider, blacklisted)
           }
+          onMarkEmailSent={async (patch) => {
+            await updateProvider(detailProvider.id, patch);
+            await refresh();
+          }}
         />
       )}
     </>

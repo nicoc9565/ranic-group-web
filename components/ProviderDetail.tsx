@@ -6,6 +6,7 @@ import { formatDate, todayISO } from "@/lib/format";
 import type { Provider } from "@/lib/types";
 import { FollowUpTrack } from "./FollowUpTrack";
 import { Modal } from "./Modal";
+import { ProviderEmailComposer } from "./ProviderEmailComposer";
 import { StatusBadge } from "./StatusBadge";
 
 const labelCls = "font-eyebrow text-[10px] uppercase tracking-[0.18em] text-ink-soft";
@@ -29,6 +30,7 @@ export function ProviderDetail({
   onStartFollowUp,
   onToggleOptOut,
   onToggleBlacklist,
+  onMarkEmailSent,
 }: {
   provider: Provider;
   today: Date;
@@ -40,6 +42,7 @@ export function ProviderDetail({
   onStartFollowUp: (patch: Partial<Provider>) => Promise<void> | void;
   onToggleOptOut: (optedOut: boolean) => Promise<void> | void;
   onToggleBlacklist: (blacklisted: boolean) => Promise<void> | void;
+  onMarkEmailSent: (patch: Partial<Provider>) => Promise<void> | void;
 }) {
   const [noteText, setNoteText] = useState("");
   const [adding, setAdding] = useState(false);
@@ -217,6 +220,10 @@ export function ProviderDetail({
             showDates
           />
         </div>
+
+        {/* Generador de emails, plegado. Antes era una pantalla suelta que te hacía elegir el
+            proveedor de un select de 2500; acá el proveedor ya está en pantalla. */}
+        <ProviderEmailComposer provider={provider} onMarkSent={onMarkEmailSent} />
 
         {/* Notas — log cronológico solo-append */}
         <div>
