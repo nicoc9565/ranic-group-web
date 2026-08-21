@@ -38,17 +38,26 @@ describe("generateEmail", () => {
       expect(generateEmail(t, p).toLowerCase()).not.toContain("amazon");
     }
   });
-  test("ningún email menciona EIN / Resale Certificate / Tax ID", () => {
-    for (const t of ALL_TYPES) {
+  // first_short es la excepción: Nico decidió ofrecer EIN y reseller certificate de entrada en el
+  // primer contacto en frío, para acortar el ida y vuelta de apertura de cuenta. El resto de los
+  // templates sigue bajo la regla original — no se ofrecen salvo que el proveedor los pida.
+  test("ningún email menciona EIN / Resale Certificate / Tax ID (salvo first_short)", () => {
+    for (const t of ALL_TYPES.filter((t) => t !== "first_short")) {
       const body = generateEmail(t, p).toLowerCase();
       expect(body).not.toContain("ein");
       expect(body).not.toContain("resale certificate");
       expect(body).not.toContain("tax id");
     }
   });
-  test("todos terminan con la firma (teléfono)", () => {
+  test("todos terminan con la firma (web)", () => {
     for (const t of ALL_TYPES) {
-      expect(generateEmail(t, p)).toContain("+1 (908) 656-6042");
+      expect(generateEmail(t, p)).toContain("www.ranicgroup.com");
+    }
+  });
+  // Ningún template lleva teléfono: el único canal que ofrecemos es el email.
+  test("ningún email incluye un número de teléfono", () => {
+    for (const t of ALL_TYPES) {
+      expect(generateEmail(t, p)).not.toMatch(/\d{3}[-.\s]\d{3}[-.\s]\d{4}/);
     }
   });
   test("reemplaza [Company] por el nombre de la empresa", () => {

@@ -59,7 +59,10 @@ improvises alcance: si algo es ambiguo, preguntá antes. La Fase 2 no toca nada 
 ### Emails (forzar siempre, ver §6.4 del spec)
 - Primer contacto empieza con **"Dear [Name],"** — nunca "Hi" (solo "Hi" en hilos ya iniciados).
 - **Nunca mencionar Amazon** salvo que el proveedor lo haya mencionado → usar "online retailer".
-- **Nunca incluir EIN, Resale Certificate ni Tax ID** salvo pedido explícito del proveedor.
+- **Nunca incluir EIN, Resale Certificate ni Tax ID** salvo pedido explícito del proveedor. Única
+  excepción, decidida por Nico: el primer contacto en frío (`first_short`) los ofrece de entrada
+  ("We have our EIN and reseller certificate ready to provide") para acortar el ida y vuelta de
+  apertura de cuenta. No extiendas la excepción a los otros templates.
 - La frase **"recurring monthly orders"** aparece en los emails de primer contacto.
 - Presentarse como **"online retailer based in Summit, NJ"** — nunca wholesaler/distributor.
 - Todo email cierra con esta firma exacta:
@@ -68,8 +71,9 @@ improvises alcance: si algo es ambiguo, preguntá antes. La Fase 2 no toca nada 
   Managing Member | RANIC GROUP LLC
   nicolas.conti@ranicgroup.com
   www.ranicgroup.com
-  +1 (908) 656-6042
   ```
+- **Sin teléfono en ningún email**: ni en la firma, ni en el cuerpo, ni como invitación a llamar
+  ("call me", "hop on a call"). El único canal que se ofrece es el email.
 - Los 3 templates textuales (short/long first contact, catalog with UPCs) van **tal cual** el spec.
 - Copiar al portapapeles = **texto plano**.
 

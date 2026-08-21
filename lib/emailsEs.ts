@@ -7,19 +7,20 @@ import type { EmailType, Provider } from "./types";
 const SIGNATURE = `Nicolas Conti
 Managing Member | RANIC GROUP LLC
 nicolas.conti@ranicgroup.com
-www.ranicgroup.com
-+1 (908) 656-6042`;
+www.ranicgroup.com`;
 
 const TEMPLATES_ES: Record<EmailType, string> = {
   first_short: `Estimado/a [Contact]:
 
 Mi nombre es Nicolas Conti, Managing Member de RANIC GROUP LLC, un retailer online con base en Summit, NJ.
 
-Estamos buscando activamente sumar productos de [Company] a nuestro catálogo y realizar pedidos mensuales recurrentes.
+Estamos buscando activamente sumar productos de [Company] a nuestro catálogo y nos gustaría abrir una cuenta mayorista con ustedes para pedidos mensuales recurrentes.
 
-¿Podrías enviarnos tu lista de precios mayorista (con UPCs) y los requisitos de pedido mínimo?
+¿Podrías enviarnos tu lista de precios mayorista (con UPCs) y los requisitos de pedido mínimo, junto con cualquier formulario de dealer que quieras que completemos?
 
-Estamos listos para avanzar rápido con un primer pedido.
+Tenemos nuestro EIN y el reseller certificate listos para entregar, y estamos listos para avanzar rápido con un primer pedido.
+
+El email es la mejor forma de contactarme.
 
 Saludos cordiales,
 [signature]`,

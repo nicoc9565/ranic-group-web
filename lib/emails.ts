@@ -4,13 +4,13 @@ import type { EmailType, Provider } from "./types";
 const SIGNATURE = `Nicolas Conti
 Managing Member | RANIC GROUP LLC
 nicolas.conti@ranicgroup.com
-www.ranicgroup.com
-+1 (908) 656-6042`;
+www.ranicgroup.com`;
 
 // Cuerpos por tipo de email. Placeholders [Contact], [Company] y [signature] se reemplazan en
 // generateEmail. Reglas forzadas: primeros contactos empiezan con "Dear [Contact],"; los
 // follow-ups de hilo en curso pueden usar "Hi [Contact],"; nunca mencionar Amazon (usar "online
-// retailer"); nunca incluir EIN / Resale Certificate / Tax ID salvo pedido explícito; la frase
+// retailer"); nunca incluir EIN / Resale Certificate / Tax ID salvo pedido explícito, con la
+// ÚNICA excepción de first_short, donde Nico decidió ofrecerlos de entrada (ver CLAUDE.md); la frase
 // "recurring monthly orders" aparece en los primeros contactos; presentarse como "online retailer
 // based in Summit, NJ".
 const TEMPLATES: Record<EmailType, string> = {
@@ -19,11 +19,13 @@ const TEMPLATES: Record<EmailType, string> = {
 
 My name is Nicolas Conti, Managing Member of RANIC GROUP LLC, an online retailer based in Summit, NJ.
 
-We are actively looking to add [Company] products to our catalog and place recurring monthly orders.
+We are actively looking to add [Company] products to our catalog and would like to open a wholesale account with you for recurring monthly orders.
 
-Could you please send us your wholesale price list (with UPCs) and minimum order requirements?
+Could you please send us your wholesale price list (with UPCs) and minimum order requirements, along with any dealer application you'd like us to complete?
 
-We are ready to move quickly on an initial order.
+We have our EIN and reseller certificate ready to provide, and are ready to move quickly on an initial order.
+
+Email is the best way to reach me.
 
 Best regards,
 [signature]`,
