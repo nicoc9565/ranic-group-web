@@ -83,6 +83,21 @@ export function softBouncePatch(p: Provider, opts: { now: number }): Partial<Pro
 }
 
 /**
+ * Baja pedida por el proveedor a través de la cabecera List-Unsubscribe.
+ *
+ * `optedOut` es el peldaño 1 de la escalera de computeBucket: el proveedor pasa a "descartado" y
+ * sale de los seis filtros de send-batch, que incluyen `optedOut == false`. Se apaga también el
+ * follow-up: insistirle a quien pidió la baja es exactamente lo que no hay que hacer.
+ *
+ * NO toca `outreachEligible` a propósito: ese campo mide si la DIRECCIÓN sirve (dominio con MX,
+ * sin rebote duro), no si la persona quiere recibirnos. Mezclarlos haría que desmarcar una baja
+ * hecha por error resucite una dirección que quizá esté muerta por otro motivo.
+ */
+export function unsubscribePatch(now: number): Partial<Provider> {
+  return { optedOut: true, followUpStopped: true, updatedAt: now };
+}
+
+/**
  * Marcar o desmarcar un proveedor como blacklisteado.
  *
  * Marcar es CUATRO campos, no uno. `blacklisted` solo no alcanza: no está entre los filtros de
