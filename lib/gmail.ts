@@ -10,6 +10,7 @@ import {
   type ThreadMessage,
   type ThreadState,
 } from "./bounceClassification";
+import { isUnsubscribeRequest, senderAddress } from "./unsubscribeClassification";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
@@ -176,6 +177,59 @@ export async function listRecentBounces(days: number): Promise<Bounce[]> {
     });
   }
   return bounces;
+}
+
+export type UnsubscribeRequest = {
+  messageId: string;
+  /** Quién pidió la baja, en minúscula, para correlacionar con Provider.email. */
+  sender: string;
+  /** Epoch ms de recepción. Se compara contra sendAttemptedAt del proveedor. */
+  receivedAt: number;
+};
+
+/**
+ * Pedidos de baja de los últimos `days` días.
+ *
+ * Dos capas, igual que los rebotes: la CONSULTA sobre-captura (`subject:unsubscribe` matchea
+ * cualquier asunto que contenga la palabra) y el clasificador puro filtra con el asunto exacto.
+ * Un falso positivo de la consulta no cuesta nada porque se descarta después; un falso negativo
+ * sería una baja que ignoramos, que es justo lo que la cabecera existe para evitar.
+ *
+ * Pide solo cabeceras: para decidir alcanzan `subject` y `from`, y el cuerpo no se mira nunca.
+ */
+export async function listRecentUnsubscribes(days: number): Promise<UnsubscribeRequest[]> {
+  const gmail = client();
+  const res = await gmail.users.messages.list({
+    userId: "me",
+    q: `subject:unsubscribe newer_than:${days}d`,
+    // Mismo motivo que en los rebotes: un pedido de baja puede caer en spam, y un humano que
+    // ordena su casilla lo borra por ruido. La detección no puede depender de eso.
+    includeSpamTrash: true,
+    maxResults: 200,
+  });
+
+  const requests: UnsubscribeRequest[] = [];
+  for (const ref of res.data.messages ?? []) {
+    if (!ref.id) continue;
+    const full = await gmail.users.messages.get({
+      userId: "me",
+      id: ref.id,
+      format: "metadata",
+      metadataHeaders: ["From", "Subject"],
+    });
+    const msg = { headers: headerMap(full.data.payload?.headers ?? undefined) };
+    if (!isUnsubscribeRequest(msg)) continue;
+
+    const sender = senderAddress(msg.headers["from"]);
+    if (!sender) continue;
+
+    requests.push({
+      messageId: ref.id,
+      sender,
+      receivedAt: Number(full.data.internalDate ?? 0),
+    });
+  }
+  return requests;
 }
 
 /**
